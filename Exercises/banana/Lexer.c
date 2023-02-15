@@ -12,7 +12,8 @@ typedef struct {
 
 FILE* f;
 
-const char* KeyWords[1] = { "bello" };
+unsigned short keywordNum = 12;
+const char* keywords[12] = {"bello", "minion", "banana", "gelato", "bapple", "bee", "do", "stopa", "para", "tu", "bank", "yu"};
 
 int Init()
 {
@@ -55,10 +56,20 @@ Token GetToken()
 		}
 		temp[i] = '\0';
 
+        strcpy(t.x, temp);
 		// try to find the lexeme in the array of tokens
 		// if found as a keyword
 		// return the token with type = keyword
 		// else return the token with type = id
+        for(int i = 0; i < keywordNum; ++i) {
+            if (!strcmp(temp, keywords[i])) {
+                t.t = keyword;
+                return t;
+            }
+        }
+        t.t = id;
+        return t;
+        
 	}
 	else if (isdigit(c))
 	{
@@ -69,9 +80,22 @@ Token GetToken()
 		// it is a symbol
 		// wrap it in a token and return 
 	}
+    return t;
 }
 
 int main()
 {
-	Init();
+	if (!Init())
+        printf("Bad file name\n");
+
+    // For printing
+    const char *Tokens[6] = {"keyword", "id", "num", "sym", "eof", "err"};
+    printf("%lu", sizeof(Tokens));
+    
+    Token t;
+
+    while (t.t != eof) {
+        t = GetToken();
+        printf("Token of type: %s with a value of: %s\n", Tokens[t.t], t.x);
+    }
 }

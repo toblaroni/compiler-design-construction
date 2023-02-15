@@ -1,0 +1,22 @@
+! this is a program written in the banana language, i.e. Minionese.
+! comments are coloured in green and keywords are in blue.
+
+bello ! every program must start with the keyword bello (hello)
+
+! first, let us declare the minions of the program.
+minion bob : banana ! declares minion bob who stores bananas in his tummy
+minion kevin : gelato ! kevin stores gelato in his tummy
+minion stuart : bapple ! stuart stores apples
+
+! some assignment statements
+bob @ 31b ! bob stores 31 bananas is his tummy
+stuart @ 3p * 2 ! stuart eats 6 apples, suffix p after integers is for apples
+kevin @ bob + stuart * 2 + 2p ! kevin eats bob and two stuarts plus two more apples
+
+bee do 100 ! repeat the following statements 100 times
+ kevin @ kevin * 2 ! whip the gelato
+stopa ! end of block of statements (loop body)
+
+para tu kevin ! kevin gives us the gelato
+
+bank yu ! every program must end with bank yu (thank you)
