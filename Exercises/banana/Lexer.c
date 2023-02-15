@@ -66,10 +66,7 @@ Token GetToken()
 		temp[i] = '\0';
 
         strcpy(t.x, temp);
-		// try to find the lexeme in the array of tokens
-		// if found as a keyword
-		// return the token with type = keyword
-		// else return the token with type = id
+
         for(int i = 0; i < keywordNum; ++i) {
             if (!strcmp(temp, keywords[i])) {
                 t.t = keyword;
@@ -77,17 +74,23 @@ Token GetToken()
             }
         }
         t.t = id;
-        return t;
         
 	}
 	else if (isdigit(c))
 	{
-		// extract the number token and return it
+        while (isdigit(c) || c == 'p' || c == 'b') {
+			t.x[i] = c;
+			i++;
+			c = getc(f);
+        }
+        t.x[i] = '\0';
+        t.t = num;
 	}
 	else
 	{
-		// it is a symbol
-		// wrap it in a token and return 
+        t.t = sym;
+        t.x[0] = c;
+        t.x[1] = '\0';
 	}
     return t;
 }
