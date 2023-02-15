@@ -28,7 +28,7 @@ int Init()
 
 Token GetToken()
 {
-	Token t;
+	Token t = {};
 	// consume any leading white space or comments
 	int c;
 	c = getc(f);
@@ -36,6 +36,15 @@ Token GetToken()
 	{
 		c = getc(f);
 	}
+
+    // Comments
+    while (c == '!' || c == '\n') 
+    {
+        while (c != '\n') {
+            c = getc(f);
+        }
+        c = getc(f);
+    }
 
 	if (c == EOF)
 	{
@@ -90,12 +99,11 @@ int main()
 
     // For printing
     const char *Tokens[6] = {"keyword", "id", "num", "sym", "eof", "err"};
-    printf("%lu", sizeof(Tokens));
     
     Token t;
 
     while (t.t != eof) {
         t = GetToken();
-        printf("Token of type: %s with a value of: %s\n", Tokens[t.t], t.x);
+        printf("<%s, %s>\n", Tokens[t.t], t.x);
     }
 }
