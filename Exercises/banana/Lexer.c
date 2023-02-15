@@ -38,7 +38,7 @@ Token GetToken()
 	}
 
     // Comments
-    while (c == '!' || c == '\n') 
+    while (c == '!' || c == '\n' || c == ' ') 
     {
         while (c != '\n') {
             c = getc(f);
