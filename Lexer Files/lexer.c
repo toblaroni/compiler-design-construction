@@ -8,10 +8,10 @@ I confirm that the following code has been developed and written by me and it is
 I also confirm that I have not copied any parts of this program from another person or any other source or facilitated someone to copy this program from me.
 I confirm that I will not publish the program online or share it with anyone without permission of the module leader.
 
-Student Name:
-Student ID:
-Email:
-Date Work Commenced:
+Student Name: Toby Hutchinson
+Student ID: sc21t2hh
+Email: sc21t2hh@leeds.ac.uk
+Date Work Commenced: 18/02/23
 *************************************************************************/
 
 
@@ -24,13 +24,17 @@ Date Work Commenced:
 
 // YOU CAN ADD YOUR OWN FUNCTIONS, DECLARATIONS AND VARIABLES HERE
 
+// Array of keywords
+const char* keywords[21] = {"class", "constructor", "method", "function",
+                            "int", "boolean", "char", "void", "var",
+                            "static", "field", "let", "do", "if", "else",
+                            "while", "return", "true", "false", "null",
+                            "this"};
 
+// Main file pointer and secondary pointer for peakToken
+FILE *f;
+FILE *f2;
 
-
-
-
-// IMPLEMENT THE FOLLOWING functions
-//***********************************
 
 // Initialise the lexer to read from source file
 // file_name is the name of the source file
@@ -39,7 +43,12 @@ Date Work Commenced:
 // if everything goes well the function should return 1
 int InitLexer (char* file_name)
 {
-  return 0;
+  f = fopen(file_name, "r");
+  if (!f) {
+    printf("Error: Bad File Name \"%s\"\n");
+    return 0;
+  }
+  return 1;
 }
 
 
