@@ -24,13 +24,7 @@ Date Work Commenced: 18/02/23
 
 // YOU CAN ADD YOUR OWN FUNCTIONS, DECLARATIONS AND VARIABLES HERE
 
-// Array of keywords
-const char* keywords[21] = {"class", "constructor", "method", "function",
-                            "int", "boolean", "char", "void", "var",
-                            "static", "field", "let", "do", "if", "else",
-                            "while", "return", "true", "false", "null",
-                            "this"};
-
+char *fileName;
 // Main file pointer and secondary pointer for peakToken
 FILE *f;
 FILE *f2;
@@ -78,10 +72,15 @@ int StopLexer ()
 #ifndef TEST
 int main ()
 {
-	// implement your main function here
-  // NOTE: the autograder will not use your main function
-
+  int openFile = InitLexer("Ball.jack");
+  if (openFile == 0)
+    return -1;
   
+  Token t;
+  while (t.tp != EOFile) {
+    printf()
+  }
+
 	return 0;
 }
 // do not remove the next line

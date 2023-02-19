@@ -1,16 +1,22 @@
 // header file for the lexer module
 // #define TEST		// uncomment this line to run the self-grader
 
-
-
 // the TokenType enumerated data type represents all possible token types in a JACK program, ERR is used to indicate a lexical error
 typedef enum {RESWORD, ID , INT , SYMBOL, STRING, EOFile, ERR} TokenType;
+
 // the LexErrCodes enumerated data type represent error codes for all possible lexical errors that can occur during tokenisation
 // EofInCom: End of file in comment
 // NewLnInStr: New line in string literal
 // EofInStr: End of file in string literal
 // IllSym: Illegal symbol in source file
 typedef enum {EofInCom , NewLnInStr , EofInStr , IllSym} LexErrCodes;
+
+// Array of keywords
+const char* keywords[21] = {"class", "constructor", "method", "function",
+                            "int", "boolean", "char", "void", "var",
+                            "static", "field", "let", "do", "if", "else",
+                            "while", "return", "true", "false", "null",
+                            "this"};
 
 // a structure for representing tokens
 typedef struct {
