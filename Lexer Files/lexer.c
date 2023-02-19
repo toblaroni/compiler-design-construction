@@ -24,6 +24,8 @@ Date Work Commenced: 18/02/23
 
 // YOU CAN ADD YOUR OWN FUNCTIONS, DECLARATIONS AND VARIABLES HERE
 
+const char *tokenTypes[7] = {"RESWORD", "ID", "INT", "SYMBOL", "STRING", "EOFile", "ERR"};
+
 char *fileName;
 // Main file pointer and secondary pointer for peakToken
 FILE *f;
@@ -37,9 +39,10 @@ FILE *f2;
 // if everything goes well the function should return 1
 int InitLexer (char* file_name)
 {
+  fileName = file_name;
   f = fopen(file_name, "r");
   if (!f) {
-    printf("Error: Bad File Name \"%s\"\n");
+    printf("Error: Bad File Name \"%s\"\n", file_name);
     return 0;
   }
   return 1;
@@ -50,7 +53,10 @@ int InitLexer (char* file_name)
 Token GetNextToken ()
 {
 	Token t;
-  t.tp = ERR;
+  t.ln = 5;
+  strcpy(t.fileName, fileName);
+  strcpy(t.lxm, "Test");
+  t.tt = ERR;
   return t;
 }
 
@@ -58,29 +64,34 @@ Token GetNextToken ()
 Token PeekNextToken ()
 {
   Token t;
-  t.tp = ERR;
+  t.tt = ERR;
   return t;
 }
 
 // clean out at end, e.g. close files, free memory, ... etc
 int StopLexer ()
 {
+
 	return 0;
 }
 
 // do not remove the next line
 #ifndef TEST
-int main ()
+int main (int argc, char **argv)
 {
-  int openFile = InitLexer("Ball.jack");
+  int openFile = InitLexer(argv[1]);
   if (openFile == 0)
     return -1;
   
+  FILE *fOut = fopen(argv[2], "w");
   Token t;
-  while (t.tp != EOFile) {
-    printf()
+  while (t.tt != ERR) {
+    t = GetNextToken();
+    fprintf(fOut, "< %s, %i, %s, %s >\n",
+            t.fileName, t.ln, t.lxm, tokenTypes[t.tt]);
   }
 
+  fclose(fOut);
 	return 0;
 }
 // do not remove the next line

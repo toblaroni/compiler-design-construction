@@ -8,11 +8,11 @@ jackFiles=(Ball.jack Empty.jack EofInComment.jack EofInStr.jack Fraction.jack
              Square.jack SquareGame.jack)
 
 # Corresponding Token Files
-jackFiles=(Ball.jack_tokens.jack Empty.jack_tokens.jack EofInComment.jack_tokens.jack
-             EofInStr.jack_tokens.jack Fraction.jack_tokens.jack
-             IllegalSymbol.jack_tokens.jack List.jack_tokens.jack Main.jack_tokens.jack
-             NewLineInStr.jack_tokens.jack OnlyComments.jack_tokens.jack
-             Square.jack_tokens.jack SquareGame.jack_tokens.jack)
+tokenFiles=(Ball.jack_tokens.txt Empty.jack_tokens.txt EofInComment.jack_tokens.txt
+             EofInStr.jack_tokens.txt Fraction.jack_tokens.txt
+             IllegalSymbol.jack_tokens.txt List.jack_tokens.txt Main.jack_tokens.txt
+             NewLineInStr.jack_tokens.txt OnlyComments.jack_tokens.txt
+             Square.jack_tokens.txt SquareGame.jack_tokens.txt)
 
 printf "Building Lexer"
 gcc lexer.c -o lexer
@@ -22,6 +22,6 @@ for file in ${jackFiles[@]}; do
    printf "Testing $file\n"
    ./lexer $file output
    diff ${tokenFiles[$index]} output
-   index=$(index+1)
+   index=$((index+1))
 done
 rm lexer output
