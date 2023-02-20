@@ -31,14 +31,26 @@ char *fileName;
 FILE *f;
 FILE *f2;
 
+// Trim Whitespace from the input file
+// Returns number of newlines encountered
+int trimSpace(FILE *f, Token t) {
+  char c;
+  int nl = 0;
+  while (isspace(c)) {
+    if (c == '\n')
+      nl ++;
+
+    getc(f);
+  }
+  return nl;
+}
 
 // Initialise the lexer to read from source file
 // file_name is the name of the source file
 // This requires opening the file and making any necessary initialisations of the lexer
 // If an error occurs, the function should return 0
 // if everything goes well the function should return 1
-int InitLexer (char* file_name)
-{
+int InitLexer (char* file_name) {
   fileName = file_name;
   f = fopen(file_name, "r");
   if (!f) {
@@ -48,21 +60,20 @@ int InitLexer (char* file_name)
   return 1;
 }
 
-
 // Get the next token from the source file
-Token GetNextToken ()
-{
+Token GetNextToken () {
 	Token t;
-  t.ln = 5;
-  strcpy(t.fileName, fileName);
-  strcpy(t.lxm, "Test");
-  t.tt = ERR;
+  t.ln = 0;
+  strcpy(t.srcFile, fileName);
+
+  // Get rid of whitespace
+  t.ln += trimSpace(f, t);
+
   return t;
 }
 
 // peek (look) at the next token in the source file without removing it from the stream
-Token PeekNextToken ()
-{
+Token PeekNextToken () {
   Token t;
   t.tt = ERR;
   return t;
@@ -71,7 +82,8 @@ Token PeekNextToken ()
 // clean out at end, e.g. close files, free memory, ... etc
 int StopLexer ()
 {
-
+  fclose(f);
+  fclose(f2);
 	return 0;
 }
 
