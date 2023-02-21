@@ -23,17 +23,16 @@ Date Work Commenced: 18/02/23
 
 
 // YOU CAN ADD YOUR OWN FUNCTIONS, DECLARATIONS AND VARIABLES HERE
-
 const char *tokenTypes[7] = {"RESWORD", "ID", "INT", "SYMBOL", "STRING", "EOFile", "ERR"};
 
 char *fileName;
 // Main file pointer and secondary pointer for peakToken
-FILE *f;
-FILE *f2;
+FILE *fptr;
+FILE *fptr2;
 
 // Trim Whitespace from the input file
 // Returns number of newlines encountered
-int trimSpace(FILE *f, Token t) {
+int trimSpace(FILE *f, char *C) {
   char c;
   int nl = 0;
   while (isspace(c)) {
@@ -42,6 +41,7 @@ int trimSpace(FILE *f, Token t) {
 
     getc(f);
   }
+  *C = c;
   return nl;
 }
 
@@ -52,8 +52,9 @@ int trimSpace(FILE *f, Token t) {
 // if everything goes well the function should return 1
 int InitLexer (char* file_name) {
   fileName = file_name;
-  f = fopen(file_name, "r");
-  if (!f) {
+  fptr = fopen(file_name, "r");
+  fptr2 = fptr;
+  if (!fptr) {
     printf("Error: Bad File Name \"%s\"\n", file_name);
     return 0;
   }
@@ -63,13 +64,31 @@ int InitLexer (char* file_name) {
 // Get the next token from the source file
 Token GetNextToken () {
 	Token t;
-  t.ln = 0;
-  strcpy(t.srcFile, fileName);
+    t.ln = 0; // init line number
+    strcpy(t.srcFile, fileName); // Set the filename of source
 
-  // Get rid of whitespace
-  t.ln += trimSpace(f, t);
+    char c;
+    // Get rid of whitespace
+    t.ln += trimSpace(fptr, &c);
 
-  return t;
+    // Check for comments
+    if (c == '/') {
+        // Get one more Char
+        getc(fptr);
+        if (c == '/') {
+            // Line comment
+        } else if (c == '*') {
+            // Multi line comment or API documentation
+        } else {
+            // It's a slash character
+            unget(c, fptr);
+            t.lxm[0] = c;
+            t.lxm[1] - '\0';
+            t.tt = SYMBOL;
+        }
+    }
+
+    return t;
 }
 
 // peek (look) at the next token in the source file without removing it from the stream
@@ -82,8 +101,8 @@ Token PeekNextToken () {
 // clean out at end, e.g. close files, free memory, ... etc
 int StopLexer ()
 {
-  fclose(f);
-  fclose(f2);
+  fclose(fptr);
+  fclose(fptr2);
 	return 0;
 }
 
