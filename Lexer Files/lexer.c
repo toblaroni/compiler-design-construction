@@ -30,26 +30,50 @@ char *fileName;
 FILE *fptr;
 FILE *fptr2;
 
+
 // Trim Whitespace from the input file
 // Returns number of newlines encountered
-int trimSpace(FILE *f, char *C) {
+int trimSpace(char *C) {
   char c;
   int nl = 0;
   while (isspace(c)) {
     if (c == '\n')
       nl ++;
 
-    getc(f);
+    c = getc(fptr);
   }
   *C = c;
   return nl;
 }
 
+// Function to remove comments
+void rmComments(char *c, Token *t) {
+    // Get one more Char
+    *c = getc(fptr);
+
+    if (*c == '/') {
+        // Line comment -> Refactor to function?
+        while(*c != '\n') {
+            *c = getc(fptr);
+            printf("Getting comment");
+        }
+
+        
+    } else if (*c == '*') {
+        // Multi line comment or API documentation
+
+    } else {
+        // It's a slash character
+        ungetc(*c, fptr);
+        t->lxm[0] = *c;
+        t->lxm[1] = '\0';
+        t->tt = SYMBOL;
+    }
+}
+
+
 // Initialise the lexer to read from source file
-// file_name is the name of the source file
-// This requires opening the file and making any necessary initialisations of the lexer
-// If an error occurs, the function should return 0
-// if everything goes well the function should return 1
+// File_name is the name of the src file
 int InitLexer (char* file_name) {
   fileName = file_name;
   fptr = fopen(file_name, "r");
@@ -61,6 +85,7 @@ int InitLexer (char* file_name) {
   return 1;
 }
 
+
 // Get the next token from the source file
 Token GetNextToken () {
 	Token t;
@@ -68,28 +93,23 @@ Token GetNextToken () {
     strcpy(t.srcFile, fileName); // Set the filename of source
 
     char c;
+
     // Get rid of whitespace
-    t.ln += trimSpace(fptr, &c);
+    t.ln += trimSpace(&c);
 
-    // Check for comments
-    if (c == '/') {
-        // Get one more Char
-        getc(fptr);
-        if (c == '/') {
-            // Line comment
-        } else if (c == '*') {
-            // Multi line comment or API documentation
-        } else {
-            // It's a slash character
-            unget(c, fptr);
-            t.lxm[0] = c;
-            t.lxm[1] - '\0';
-            t.tt = SYMBOL;
-        }
+    char *temp = (char *) malloc(sizeof(char) * 255);
+
+    // Remove comments
+    if (c == '/')
+        rmComments(&c, &t);
+    else {
+        strcpy(t.lxm, "End of File");
+        t.tt = EOFile;
     }
-
+    free(temp);
     return t;
 }
+
 
 // peek (look) at the next token in the source file without removing it from the stream
 Token PeekNextToken () {
@@ -98,13 +118,14 @@ Token PeekNextToken () {
   return t;
 }
 
+
 // clean out at end, e.g. close files, free memory, ... etc
-int StopLexer ()
-{
+int StopLexer () {
   fclose(fptr);
   fclose(fptr2);
 	return 0;
 }
+
 
 // do not remove the next line
 #ifndef TEST
@@ -116,10 +137,10 @@ int main (int argc, char **argv)
   
   FILE *fOut = fopen(argv[2], "w");
   Token t;
-  while (t.tt != ERR) {
+  while (t.tt != ERR && t.tt != EOFile) {
     t = GetNextToken();
-    fprintf(fOut, "< %s, %i, %s, %s >\n",
-            t.fileName, t.ln, t.lxm, tokenTypes[t.tt]);
+    fprintf(fOut, "<%s, %i, %s, %s>\n",
+            t.srcFile, t.ln, t.lxm, tokenTypes[t.tt]);
   }
 
   fclose(fOut);

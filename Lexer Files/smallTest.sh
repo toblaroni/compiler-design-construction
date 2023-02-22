@@ -1,0 +1,1 @@
+gcc lexer.c -o lexer && ./lexer test.jack output && cat output && rm output lexer
