@@ -23,14 +23,13 @@ Date Work Commenced: 18/02/23
 
 
 // YOU CAN ADD YOUR OWN FUNCTIONS, DECLARATIONS AND VARIABLES HERE
+
+#define MAX_LEXEME_LENGTH 128
+
 const char *tokenTypes[7] = {"RESWORD", "ID", "INT", "SYMBOL", "STRING", "EOFile", "ERR"};
 
 // Array of keywords
-const char *keywords[21] = {"class", "constructor", "method", "function",
-                            "int", "boolean", "char", "void", "var",
-                            "static", "field", "let", "do", "if", "else",
-                            "while", "return", "true", "false", "null",
-                            "this"};
+const char *keywords[21] = {"class", "constructor", "method", "function", "int", "boolean", "char", "void", "var", "static", "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this"};
 
 char *fileName;
 
@@ -41,6 +40,17 @@ FILE *fptr2;
 // Global line number variable
 int lineNumber;
 
+
+// Function for checking if it's the end of the file after a newline
+// If it's not the end of the file then update lineNumber
+void peekEOF(char *c) {
+    if (*c == '\n') {
+        *c = getc(fptr);
+        if (*c == EOF) {
+            return;
+        }
+        ungetc(*c, fptr);
+        lineNumber++; } }
 
 // Function to remove comments
 void rmComments(Token *t) {
@@ -55,6 +65,7 @@ void rmComments(Token *t) {
             while(c != '\n') {
                 c = getc(fptr);
             }
+            peekEOF(&c);
             break;
         } 
         case '*':
@@ -63,15 +74,36 @@ void rmComments(Token *t) {
             printf("Getting Multi Line comment\n");
             break;
         }
-        default:
-        {
-            // It's a slash character
-            ungetc(c, fptr);
-            t->lx[0] = c;
-            t->lx[1] = '\0';
-            t->tp = SYMBOL;
+    }
+}
+
+
+void getId(Token *t, char c_) {
+    char c = c_;
+    int i = 0;
+    char temp[MAX_LEXEME_LENGTH];
+
+    // Loop until you find a character that can't be in an ID
+    while (isalnum(c) || c == '_' && i < MAX_LEXEME_LENGTH) {
+        temp[i] = c;
+        c = getc(fptr);
+        i ++;
+    } temp[i] = '\0'; t->ln = lineNumber;
+
+    // Check if it's a reserved word
+    for (int i = 0; i < 21; ++i) {
+        if (strcmp(keywords[i], temp) == 0) {
+            t->tp = RESWORD;
+            strcpy(t->lx, temp);
+            return;
         }
     }
+
+    // We got an ID
+    t->tp = ID;
+    strcpy(t->lx, temp);
+
+    peekEOF(&c);
 }
 
 
@@ -93,7 +125,7 @@ int InitLexer (char* file_name) {
 
 // Get the next token from the source file
 Token GetNextToken () {
-	Token t;
+	Token t = {};
     strcpy(t.fl, fileName); // Set the filename of source
 
     char c = getc(fptr);
@@ -102,30 +134,26 @@ Token GetNextToken () {
     while (isspace(c)) {
         if (c == '\n')
             lineNumber ++;
-        printf("Getting whitespace\n");
+
         c = getc(fptr);
     }
-
-    printf("Current char = %c, Current line number = %i\n", c, lineNumber);
-
-    char *temp = (char *) malloc(sizeof(char) * 255);
 
     // Remove comments
     if (c == '/')
         rmComments(&t);
 
-    // Check for end of file
-    c = getc(fptr);
     if (c == EOF) {
         strcpy(t.lx, "End of File");
         t.tp = EOFile;
+        t.ln = lineNumber;
+        return t;
     }
-
-    lineNumber ++; // Update to account for newline after collecting comments
         
-
-    t.ln = lineNumber;
-    free(temp);
+    // Handle identifiers and keywords
+    if (isalpha(c) || c == '_') {
+        getId(&t, c);
+        return t;
+    }
     return t;
 }
 

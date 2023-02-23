@@ -1,1 +1,3 @@
-<test.jack, 1, End of File, EOFile>
+<test.jack, 1, Ham, ID>
+<test.jack, 0, , RESWORD>
+<test.jack, 2, End of File, EOFile>
