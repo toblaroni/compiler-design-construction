@@ -11,20 +11,14 @@ typedef enum {RESWORD, ID , INT , SYMBOL, STRING, EOFile, ERR} TokenType;
 // IllSym: Illegal symbol in source file
 typedef enum {EofInCom , NewLnInStr , EofInStr , IllSym} LexErrCodes;
 
-// Array of keywords
-const char *keywords[21] = {"class", "constructor", "method", "function",
-                            "int", "boolean", "char", "void", "var",
-                            "static", "field", "let", "do", "if", "else",
-                            "while", "return", "true", "false", "null",
-                            "this"};
 
 // a structure for representing tokens
 typedef struct {
-  char srcFile[32];		// the file (name) in which this token exists
+  char fl[32];		// the file (name) in which this token exists
   int ln;			// the line number of the source file where the token exists
-  char lxm[128];		// the lexeme (string) of the token, e.g. "34". If the lexer encounters an error this string is set to an error message
-  TokenType tt;		// the type of this token, e.g. INT
-  int errCode;			// If the lexer encounters an error this value is set to the proper error code (see the above enumerated list of errors)
+  char lx[128];		// the lexeme (string) of the token, e.g. "34". If the lexer encounters an error this string is set to an error message
+  TokenType tp;		// the type of this token, e.g. INT
+  int ec;			// If the lexer encounters an error this value is set to the proper error code (see the above enumerated list of errors)
 } Token;
 
 

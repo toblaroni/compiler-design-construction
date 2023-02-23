@@ -25,6 +25,13 @@ Date Work Commenced: 18/02/23
 // YOU CAN ADD YOUR OWN FUNCTIONS, DECLARATIONS AND VARIABLES HERE
 const char *tokenTypes[7] = {"RESWORD", "ID", "INT", "SYMBOL", "STRING", "EOFile", "ERR"};
 
+// Array of keywords
+const char *keywords[21] = {"class", "constructor", "method", "function",
+                            "int", "boolean", "char", "void", "var",
+                            "static", "field", "let", "do", "if", "else",
+                            "while", "return", "true", "false", "null",
+                            "this"};
+
 char *fileName;
 
 // Main file pointer and secondary pointer for peakToken
@@ -48,7 +55,6 @@ void rmComments(Token *t) {
             while(c != '\n') {
                 c = getc(fptr);
             }
-            lineNumber ++;
             break;
         } 
         case '*':
@@ -61,9 +67,9 @@ void rmComments(Token *t) {
         {
             // It's a slash character
             ungetc(c, fptr);
-            t->lxm[0] = c;
-            t->lxm[1] = '\0';
-            t->tt = SYMBOL;
+            t->lx[0] = c;
+            t->lx[1] = '\0';
+            t->tp = SYMBOL;
         }
     }
 }
@@ -88,7 +94,7 @@ int InitLexer (char* file_name) {
 // Get the next token from the source file
 Token GetNextToken () {
 	Token t;
-    strcpy(t.srcFile, fileName); // Set the filename of source
+    strcpy(t.fl, fileName); // Set the filename of source
 
     char c = getc(fptr);
 
@@ -100,17 +106,23 @@ Token GetNextToken () {
         c = getc(fptr);
     }
 
-    printf("Current char = %c, Current line number = %i\n", c, t.ln);
+    printf("Current char = %c, Current line number = %i\n", c, lineNumber);
 
     char *temp = (char *) malloc(sizeof(char) * 255);
 
     // Remove comments
     if (c == '/')
         rmComments(&t);
-    else {
-        strcpy(t.lxm, "End of File");
-        t.tt = EOFile;
+
+    // Check for end of file
+    c = getc(fptr);
+    if (c == EOF) {
+        strcpy(t.lx, "End of File");
+        t.tp = EOFile;
     }
+
+    lineNumber ++; // Update to account for newline after collecting comments
+        
 
     t.ln = lineNumber;
     free(temp);
@@ -121,7 +133,7 @@ Token GetNextToken () {
 // peek (look) at the next token in the source file without removing it from the stream
 Token PeekNextToken () {
   Token t;
-  t.tt = ERR;
+  t.tp = ERR;
   return t;
 }
 
@@ -146,10 +158,10 @@ int main (int argc, char **argv)
 
     Token t;
     int i = 0;
-    while (t.tt != EOFile) {
+    while (t.tp != EOFile) {
         t = GetNextToken();
         fprintf(fOut, "<%s, %i, %s, %s>\n",
-                t.srcFile, t.ln, t.lxm, tokenTypes[t.tt]);
+                t.fl, t.ln, t.lx, tokenTypes[t.tp]);
         i++;
     }
 
