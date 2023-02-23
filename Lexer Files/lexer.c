@@ -50,22 +50,23 @@ void peekEOF(char *c) {
             return;
         }
         ungetc(*c, fptr);
-        lineNumber++; } }
+        lineNumber++;
+    } 
+}
 
 // Function to remove comments
-void rmComments(Token *t) {
+void rmComments(Token *t, char *c) {
     // Get one more Char
-    char c = getc(fptr);
+    *c = getc(fptr);
 
-    switch (c) {
+    switch (*c) {
         case '/': 
         {
             // Single line comment
             printf("Getting Single line comment\n");
-            while(c != '\n') {
-                c = getc(fptr);
+            while(*c != '\n') {
+                *c = getc(fptr);
             }
-            peekEOF(&c);
             break;
         } 
         case '*':
@@ -140,7 +141,9 @@ Token GetNextToken () {
 
     // Remove comments
     if (c == '/')
-        rmComments(&t);
+        rmComments(&t, &c);
+
+    peekEOF(&c);
 
     if (c == EOF) {
         strcpy(t.lx, "End of File");
