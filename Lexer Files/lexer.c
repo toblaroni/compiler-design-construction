@@ -26,48 +26,45 @@ Date Work Commenced: 18/02/23
 const char *tokenTypes[7] = {"RESWORD", "ID", "INT", "SYMBOL", "STRING", "EOFile", "ERR"};
 
 char *fileName;
+
 // Main file pointer and secondary pointer for peakToken
 FILE *fptr;
 FILE *fptr2;
 
+// Global line number variable
+int lineNumber;
 
-// Trim Whitespace from the input file
-// Returns number of newlines encountered
-int trimSpace(char *C) {
-  char c;
-  int nl = 0;
-  while (isspace(c)) {
-    if (c == '\n')
-      nl ++;
-
-    c = getc(fptr);
-  }
-  *C = c;
-  return nl;
-}
 
 // Function to remove comments
-void rmComments(char *c, Token *t) {
+void rmComments(Token *t) {
     // Get one more Char
-    *c = getc(fptr);
+    char c = getc(fptr);
 
-    if (*c == '/') {
-        // Line comment -> Refactor to function?
-        while(*c != '\n') {
-            *c = getc(fptr);
-            printf("Getting comment");
+    switch (c) {
+        case '/': 
+        {
+            // Single line comment
+            printf("Getting Single line comment\n");
+            while(c != '\n') {
+                c = getc(fptr);
+            }
+            lineNumber ++;
+            break;
+        } 
+        case '*':
+        {
+            // Multi line / Api comment
+            printf("Getting Multi Line comment\n");
+            break;
         }
-
-        
-    } else if (*c == '*') {
-        // Multi line comment or API documentation
-
-    } else {
-        // It's a slash character
-        ungetc(*c, fptr);
-        t->lxm[0] = *c;
-        t->lxm[1] = '\0';
-        t->tt = SYMBOL;
+        default:
+        {
+            // It's a slash character
+            ungetc(c, fptr);
+            t->lxm[0] = c;
+            t->lxm[1] = '\0';
+            t->tt = SYMBOL;
+        }
     }
 }
 
@@ -76,6 +73,8 @@ void rmComments(char *c, Token *t) {
 // File_name is the name of the src file
 int InitLexer (char* file_name) {
   fileName = file_name;
+  lineNumber = 1;
+
   fptr = fopen(file_name, "r");
   fptr2 = fptr;
   if (!fptr) {
@@ -89,23 +88,31 @@ int InitLexer (char* file_name) {
 // Get the next token from the source file
 Token GetNextToken () {
 	Token t;
-    t.ln = 0; // init line number
     strcpy(t.srcFile, fileName); // Set the filename of source
 
-    char c;
+    char c = getc(fptr);
 
-    // Get rid of whitespace
-    t.ln += trimSpace(&c);
+    // Get rid of whitespace and update line number accordingly
+    while (isspace(c)) {
+        if (c == '\n')
+            lineNumber ++;
+        printf("Getting whitespace\n");
+        c = getc(fptr);
+    }
+
+    printf("Current char = %c, Current line number = %i\n", c, t.ln);
 
     char *temp = (char *) malloc(sizeof(char) * 255);
 
     // Remove comments
     if (c == '/')
-        rmComments(&c, &t);
+        rmComments(&t);
     else {
         strcpy(t.lxm, "End of File");
         t.tt = EOFile;
     }
+
+    t.ln = lineNumber;
     free(temp);
     return t;
 }
@@ -121,8 +128,8 @@ Token PeekNextToken () {
 
 // clean out at end, e.g. close files, free memory, ... etc
 int StopLexer () {
-  fclose(fptr);
-  fclose(fptr2);
+    fclose(fptr);
+    fclose(fptr2);
 	return 0;
 }
 
@@ -131,20 +138,23 @@ int StopLexer () {
 #ifndef TEST
 int main (int argc, char **argv)
 {
-  int openFile = InitLexer(argv[1]);
-  if (openFile == 0)
-    return -1;
-  
-  FILE *fOut = fopen(argv[2], "w");
-  Token t;
-  while (t.tt != ERR && t.tt != EOFile) {
-    t = GetNextToken();
-    fprintf(fOut, "<%s, %i, %s, %s>\n",
-            t.srcFile, t.ln, t.lxm, tokenTypes[t.tt]);
-  }
+    int openFile = InitLexer(argv[1]);
+    if (openFile == 0)
+        return -1;
 
-  fclose(fOut);
-	return 0;
+    FILE *fOut = fopen(argv[2], "w");
+
+    Token t;
+    int i = 0;
+    while (t.tt != EOFile) {
+        t = GetNextToken();
+        fprintf(fOut, "<%s, %i, %s, %s>\n",
+                t.srcFile, t.ln, t.lxm, tokenTypes[t.tt]);
+        i++;
+    }
+
+    fclose(fOut);
+    return 0;
 }
 // do not remove the next line
 #endif
