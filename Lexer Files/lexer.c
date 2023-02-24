@@ -62,7 +62,6 @@ void rmComments(Token *t, char *c) {
         case '/': 
         {
             // Single line comment
-            printf("Getting Single line comment\n");
             while(*c != '\n') {
                 *c = getc(fptr);
             }
@@ -71,7 +70,6 @@ void rmComments(Token *t, char *c) {
         case '*':
         {
             // Multi line / Api comment
-            printf("Getting Multi Line comment\n");
             break;
         }
     }
@@ -112,12 +110,12 @@ void getStr(Token *t) {
     char c = getc(fptr);
 
     while (1) {
-        temp[i] = getc(fptr);    
+        temp[i] = c;    
         c = getc(fptr);
-        i++;
 
         // Check for Errors in the string
         if (i >= MAX_LEXEME_LENGTH  - 1) {
+            // NEEDS TO BE FULLY IMPLEMENTED
             // Truncate the string
             temp[i+1] = '"';
             temp[i+2] = '\0';
@@ -126,15 +124,13 @@ void getStr(Token *t) {
             t->ln = lineNumber; 
             return;
             
-        }
-        else if (c == '\n') {
+        } else if (c == '\n') {
             strcpy(t->lx, "Error: New line in string");
             t->ec = NewLnInStr;
             t->tp = ERR;
             t->ln = lineNumber; 
             return;
-        }
-        else if (c == EOF) {
+        } else if (c == EOF) {
             strcpy(t->lx, "Error: End of file in string");
             t->ec = EofInStr;
             t->tp = ERR;
@@ -147,6 +143,7 @@ void getStr(Token *t) {
             t->ln = lineNumber; 
             return;
         }
+        i++;
     }
 
 }
@@ -238,7 +235,7 @@ int main (int argc, char **argv)
     int i = 0;
     while (t.tp != EOFile) {
         t = GetNextToken();
-        fprintf(fOut, "<%s, %i, %s, %s>\n",
+        fprintf(fOut, "< %s, %i, %s, %s >\n",
                 t.fl, t.ln, t.lx, tokenTypes[t.tp]);
         i++;
     }

@@ -1,3 +1,25 @@
-<test.jack, 6, let, RESWORD>
-<test.jack, 6, Ham, ID>
-<test.jack, 7, End of File, EOFile>
+< test.jack, 1, Hello my name is tobyu and i like to party in the evening times especially in june. We are loving hte music at the moment so wou", STRING >
+< test.jack, 1, d, ID >
+< test.jack, 1, you, ID >
+< test.jack, 1, care, ID >
+< test.jack, 1, to, ID >
+< test.jack, 1, take, ID >
+< test.jack, 1, my, ID >
+< test.jack, 1, hand, ID >
+< test.jack, 1, thank, ID >
+< test.jack, 1, you, ID >
+< test.jack, 1, for, ID >
+< test.jack, 1, joining, ID >
+< test.jack, 1, me, ID >
+< test.jack, 1, today, ID >
+< test.jack, 1, in, ID >
+< test.jack, 1, this, RESWORD >
+< test.jack, 1, ceremony, ID >
+< test.jack, 1, of, ID >
+< test.jack, 1, good, ID >
+< test.jack, 1, and, ID >
+< test.jack, 1, evil, ID >
+< test.jack, 1, Error: New line in string, ERR >
+< test.jack, 3, let, RESWORD >
+< test.jack, 3, Ham, ID >
+< test.jack, 4, End of File, EOFile >
