@@ -26,7 +26,10 @@ Date Work Commenced: 18/02/23
 
 #define MAX_LEXEME_LENGTH 128
 
-const char *tokenTypes[7] = {"RESWORD", "ID", "INT", "SYMBOL", "STRING", "EOFile", "ERR"};
+const char *tokenTypes[7] = { "RESWORD", "ID", "INT", "SYMBOL", "STRING", "EOFile", "ERR" };
+const char symbols[18] = { '(', ')', '{', '}', '[', ']',
+                           ',', ';', '=', '.', '+', '-',
+                           '*', '/', '&', '|', '<', '>' };
 
 // Array of keywords
 const char *keywords[21] = {"class", "constructor", "method", "function", "int", "boolean", "char", "void", "var", "static", "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this"};
@@ -54,16 +57,16 @@ void peekEOF(char *c) {
 }
 
 // Function to remove comments
-void rmComments(Token *t, char *c) {
+void rmComments(Token *t, char c) {
     // Get one more Char
-    *c = getc(fptr);
+    c = getc(fptr);
 
-    switch (*c) {
+    switch (c) {
         case '/': 
         {
             // Single line comment
-            while(*c != '\n') {
-                *c = getc(fptr);
+            while(c != '\n') {
+                c = getc(fptr);
             }
             break;
         } 
@@ -72,6 +75,8 @@ void rmComments(Token *t, char *c) {
             // Multi line / Api comment
             break;
         }
+        default:
+            ungetc(c, fptr);
     }
 }
 
@@ -145,9 +150,48 @@ void getStr(Token *t) {
         }
         i++;
     }
-
 }
 
+
+// Get an integer token
+void getInt(Token *t, char c) {
+    char temp[MAX_LEXEME_LENGTH];
+    int i = 0;
+
+    while (isdigit(c)) {
+        temp[i] = c;
+        c = getc(fptr);
+        i++;
+
+        if (i >= MAX_LEXEME_LENGTH -1) {
+            temp[i] = '\0';
+            strcpy(t->lx, temp);
+            t->ln = lineNumber; 
+            t->tp = INT;
+        }
+    }
+    temp[i] = '\0';
+    strcpy(t->lx, temp);
+    t->ln = lineNumber; 
+    t->tp = INT;
+}
+
+void getSym(Token *t, char c) {
+    for (int i = 0; i < 18; ++i) {
+        if (symbols[i] == c) {
+            t->lx[0] = c;
+            t->lx[1] = '\0';
+            t->ln    = lineNumber;
+            t->tp    = SYMBOL;
+            return;
+        }
+    }
+    t->lx[0] = c;
+    t->lx[1] = '\0';
+    t->ec    = IllSym;
+    t->tp    = ERR;
+    t->ln    = lineNumber;
+}
 
 // Initialise the lexer to read from source file
 // File_name is the name of the src file
@@ -175,13 +219,12 @@ Token GetNextToken () {
     while (isspace(c)) {
         if (c == '\n')
             lineNumber ++;
-
         c = getc(fptr);
     }
 
     // Remove comments
     if (c == '/')
-        rmComments(&t, &c);
+        rmComments(&t, c);
 
     peekEOF(&c);
 
@@ -196,12 +239,14 @@ Token GetNextToken () {
     if (isalpha(c) || c == '_') {
         getId(&t, c);
         return t;
-    } 
-    // String constants
-    else if (c == '"') {
-        getStr(&t);
+    } else if (c == '"') {
+        getStr(&t); // Get strings
         return t;
-    }
+    } else if (isdigit(c)) {
+        getInt(&t, c); // Integers
+        return t;
+    } else 
+        getSym(&t, c); // Symbols
     return t;
 }
 
