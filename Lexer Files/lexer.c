@@ -35,7 +35,6 @@ char *fileName;
 
 // Main file pointer and secondary pointer for peakToken
 FILE *fptr;
-FILE *fptr2;
 
 // Global line number variable
 int lineNumber;
@@ -79,8 +78,7 @@ void rmComments(Token *t, char *c) {
 }
 
 
-void getId(Token *t, char c_) {
-    char c = c_;
+void getId(Token *t, char c) {
     int i = 0;
     char temp[MAX_LEXEME_LENGTH];
 
@@ -108,6 +106,52 @@ void getId(Token *t, char c_) {
 }
 
 
+void getStr(Token *t) {
+    int i = 0;
+    char temp[MAX_LEXEME_LENGTH];
+    char c = getc(fptr);
+
+    while (1) {
+        temp[i] = getc(fptr);    
+        c = getc(fptr);
+        i++;
+
+        // Check for Errors in the string
+        if (i >= MAX_LEXEME_LENGTH  - 1) {
+            // Truncate the string
+            temp[i+1] = '"';
+            temp[i+2] = '\0';
+            strcpy(t->lx, temp);
+            t->tp = STRING;
+            t->ln = lineNumber; 
+            return;
+            
+        }
+        else if (c == '\n') {
+            strcpy(t->lx, "Error: New line in string");
+            t->ec = NewLnInStr;
+            t->tp = ERR;
+            t->ln = lineNumber; 
+            return;
+        }
+        else if (c == EOF) {
+            strcpy(t->lx, "Error: End of file in string");
+            t->ec = EofInStr;
+            t->tp = ERR;
+            t->ln = lineNumber; 
+            return;
+        } else if (c == '"') {
+            temp[i+1] = '\0';
+            strcpy(t->lx, temp);
+            t->tp = STRING;
+            t->ln = lineNumber; 
+            return;
+        }
+    }
+
+}
+
+
 // Initialise the lexer to read from source file
 // File_name is the name of the src file
 int InitLexer (char* file_name) {
@@ -115,7 +159,6 @@ int InitLexer (char* file_name) {
   lineNumber = 1;
 
   fptr = fopen(file_name, "r");
-  fptr2 = fptr;
   if (!fptr) {
     printf("Error: Bad File Name \"%s\"\n", file_name);
     return 0;
@@ -156,6 +199,11 @@ Token GetNextToken () {
     if (isalpha(c) || c == '_') {
         getId(&t, c);
         return t;
+    } 
+    // String constants
+    else if (c == '"') {
+        getStr(&t);
+        return t;
     }
     return t;
 }
@@ -172,7 +220,6 @@ Token PeekNextToken () {
 // clean out at end, e.g. close files, free memory, ... etc
 int StopLexer () {
     fclose(fptr);
-    fclose(fptr2);
 	return 0;
 }
 
