@@ -45,28 +45,25 @@ int lineNumber;
 
 // Function for checking if it's the end of the file after a newline
 // If it's not the end of the file then update lineNumber
-void peekEOF(char *c) {
+void peekNl(char *c) {
     if (*c == '\n') {
         *c = getc(fptr);
-        if (*c == EOF) {
-            return;
-        }
-        ungetc(*c, fptr);
         lineNumber++;
-    } 
+    } else if (*c == EOF)
+        lineNumber++;
 }
 
 // Function to remove comments
-void rmComments(Token *t, char c) {
+void rmComments(Token *t, char *c) {
     // Get one more Char
-    c = getc(fptr);
+    char C = getc(fptr);
 
-    switch (c) {
+    switch (C) {
         case '/': 
         {
             // Single line comment
-            while(c != '\n') {
-                c = getc(fptr);
+            while(*c != '\n') {
+                *c = getc(fptr);
             }
             break;
         } 
@@ -76,7 +73,13 @@ void rmComments(Token *t, char c) {
             break;
         }
         default:
-            ungetc(c, fptr);
+        {
+            t->ln    = lineNumber;
+            t->lx[0] = *c;
+            t->lx[1] = '\0';
+            t->tp    = SYMBOL;
+            
+        }
     }
 }
 
@@ -104,8 +107,6 @@ void getId(Token *t, char c) {
     // We got an ID
     t->tp = ID;
     strcpy(t->lx, temp);
-
-    peekEOF(&c);
 }
 
 
@@ -223,30 +224,32 @@ Token GetNextToken () {
     }
 
     // Remove comments
-    if (c == '/')
-        rmComments(&t, c);
+    while (c == '/') {
+        rmComments(&t, &c);
+        if (t.tp == SYMBOL)
+            return t;
+        peekNl(&c);
+    }
 
-    peekEOF(&c);
 
     if (c == EOF) {
         strcpy(t.lx, "End of File");
         t.tp = EOFile;
-        t.ln = lineNumber;
+        t.ln = ++lineNumber;
         return t;
     }
         
     // Handle identifiers and keywords
     if (isalpha(c) || c == '_') {
         getId(&t, c);
-        return t;
     } else if (c == '"') {
         getStr(&t); // Get strings
-        return t;
     } else if (isdigit(c)) {
         getInt(&t, c); // Integers
-        return t;
     } else 
         getSym(&t, c); // Symbols
+
+    peekNl(&c);
     return t;
 }
 

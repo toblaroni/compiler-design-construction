@@ -1,23 +1,10 @@
 < test.jack, 1, /, SYMBOL >
-< test.jack, 1, It's lit, STRING >
-< test.jack, 2, 382929, INT >
-< test.jack, 2, +, SYMBOL >
-< test.jack, 2, -, SYMBOL >
-< test.jack, 2, *, SYMBOL >
-< test.jack, 2, &, SYMBOL >
-< test.jack, 2, |, SYMBOL >
-< test.jack, 2, ,, SYMBOL >
-< test.jack, 2, >, SYMBOL >
-< test.jack, 2, <, SYMBOL >
-< test.jack, 2, =, SYMBOL >
-< test.jack, 3, /, SYMBOL >
-< test.jack, 3, /, SYMBOL >
-< test.jack, 3, aslkd, ID >
+< test.jack, 1, /, SYMBOL >
+< test.jack, 1, aslkd, ID >
+< test.jack, 1, let, RESWORD >
+< test.jack, 1, if, RESWORD >
+< test.jack, 1, @, ERR >
+< test.jack, 1, @, ERR >
 < test.jack, 3, let, RESWORD >
-< test.jack, 3, if, RESWORD >
-< test.jack, 3, @, ERR >
-< test.jack, 3, @, ERR >
-< test.jack, 5, let, RESWORD >
-< test.jack, 5, Ham, ID >
-< test.jack, 6, /, SYMBOL >
-< test.jack, 6, End of File, EOFile >
+< test.jack, 3, Ham, ID >
+< test.jack, 5, End of File, EOFile >
