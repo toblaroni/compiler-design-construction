@@ -1,1 +1,1 @@
-gcc -g lexer.c -o lexer && ./lexer test.jack output && cat output 
+gcc -g lexer.c -o lexer && ./lexer Ball.jack output && cat output 

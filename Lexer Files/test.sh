@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Test script for Lexer (Copied from Michael Nestor)
-
 #Jack Files
 jackFiles=(Ball.jack Empty.jack EofInComment.jack EofInStr.jack Fraction.jack
              IllegalSymbol.jack List.jack Main.jack NewLineInStr.jack OnlyComments.jack

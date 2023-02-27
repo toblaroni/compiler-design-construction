@@ -27,9 +27,9 @@ Date Work Commenced: 18/02/23
 #define MAX_LEXEME_LENGTH 128
 
 const char *tokenTypes[7] = { "RESWORD", "ID", "INT", "SYMBOL", "STRING", "EOFile", "ERR" };
-const char symbols[18] = { '(', ')', '{', '}', '[', ']',
+const char symbols[19] = { '(', ')', '{', '}', '[', ']',
                            ',', ';', '=', '.', '+', '-',
-                           '*', '/', '&', '|', '<', '>' };
+                           '*', '/', '&', '|', '<', '>', '~' };
 
 // Array of keywords
 const char *keywords[21] = {"class", "constructor", "method", "function", "int", "boolean", "char", "void", "var", "static", "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this"};
@@ -53,6 +53,41 @@ void peekNl(char *c) {
         lineNumber++;
 }
 
+void mLineComments(Token *t, char *c) {
+    // Multi line / Api comment
+    while (1) {
+        *c = getc(fptr);
+        if (*c == EOF) {
+            strcpy(t->lx, "Error: End of file in string");
+            t->ln = lineNumber;
+            t->ec = EofInStr;
+            t->tp = ERR;
+            return;
+        }
+
+        if (*c == '\n') {
+            lineNumber++;
+            continue;
+        }
+
+        if (*c != '*')
+            continue;
+
+
+        // Get another character
+        *c = getc(fptr); 
+        if (*c != '/') {
+            ungetc(*c, fptr);
+            continue;
+        }
+
+        break;
+    }
+
+    *c = getc(fptr);
+}
+
+// ************ REFACTOR PLS ************
 // Function to remove comments
 void rmComments(Token *t, char *c) {
     // Get one more Char
@@ -69,7 +104,8 @@ void rmComments(Token *t, char *c) {
         } 
         case '*':
         {
-            // Multi line / Api comment
+            // Multi Line comments
+            mLineComments(t, c);
             break;
         }
         default:
@@ -78,7 +114,6 @@ void rmComments(Token *t, char *c) {
             t->lx[0] = *c;
             t->lx[1] = '\0';
             t->tp    = SYMBOL;
-            
         }
     }
 }
@@ -89,11 +124,14 @@ void getId(Token *t, char c) {
     char temp[MAX_LEXEME_LENGTH];
 
     // Loop until you find a character that can't be in an ID
-    while (isalnum(c) || c == '_' && i < MAX_LEXEME_LENGTH) {
+    while ( (isalnum(c) || c == '_')  && i < MAX_LEXEME_LENGTH) {
         temp[i] = c;
         c = getc(fptr);
         i ++;
-    } temp[i] = '\0'; t->ln = lineNumber;
+    } 
+    ungetc(c, fptr);
+    temp[i] = '\0'; 
+    t->ln = lineNumber;
 
     // Check if it's a reserved word
     for (int i = 0; i < 21; ++i) {
@@ -175,23 +213,26 @@ void getInt(Token *t, char c) {
     strcpy(t->lx, temp);
     t->ln = lineNumber; 
     t->tp = INT;
+    ungetc(c, fptr);
 }
 
 void getSym(Token *t, char c) {
-    for (int i = 0; i < 18; ++i) {
-        if (symbols[i] == c) {
-            t->lx[0] = c;
-            t->lx[1] = '\0';
-            t->ln    = lineNumber;
-            t->tp    = SYMBOL;
-            return;
-        }
+    for (int i = 0; i < 19; ++i) {
+        if (symbols[i] != c)
+            continue;
+
+        t->lx[0] = c;
+        t->lx[1] = '\0';
+        t->ln    = lineNumber;
+        t->tp    = SYMBOL;
+        return;
     }
     t->lx[0] = c;
     t->lx[1] = '\0';
     t->ec    = IllSym;
     t->tp    = ERR;
     t->ln    = lineNumber;
+    ungetc(c, fptr);
 }
 
 // Initialise the lexer to read from source file
@@ -209,6 +250,15 @@ int InitLexer (char* file_name) {
 }
 
 
+void trimSpace(char *c) {
+    while (isspace(*c)) {
+        if (*c == '\n')
+            lineNumber ++;
+        *c = getc(fptr);
+    }
+}
+
+
 // Get the next token from the source file
 Token GetNextToken () {
 	Token t = {};
@@ -216,26 +266,22 @@ Token GetNextToken () {
 
     char c = getc(fptr);
 
-    // Get rid of whitespace and update line number accordingly
-    while (isspace(c)) {
-        if (c == '\n')
-            lineNumber ++;
-        c = getc(fptr);
-    }
+    // Remove whitespace
+    trimSpace(&c);
 
-    // Remove comments
+    // Remove comments 
     while (c == '/') {
         rmComments(&t, &c);
-        if (t.tp == SYMBOL)
+        trimSpace(&c);
+        if (t.tp == SYMBOL || t.tp == ERR)
             return t;
-        peekNl(&c);
     }
 
 
     if (c == EOF) {
         strcpy(t.lx, "End of File");
         t.tp = EOFile;
-        t.ln = ++lineNumber;
+        t.ln = lineNumber;
         return t;
     }
         
@@ -281,7 +327,7 @@ int main (int argc, char **argv)
 
     Token t;
     int i = 0;
-    while (t.tp != EOFile) {
+    while (t.tp != EOFile && t.tp != ERR) {
         t = GetNextToken();
         fprintf(fOut, "< %s, %i, %s, %s >\n",
                 t.fl, t.ln, t.lx, tokenTypes[t.tp]);
