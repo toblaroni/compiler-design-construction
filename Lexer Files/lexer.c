@@ -58,7 +58,7 @@ void mLineComments(Token *t, char *c) {
     while (1) {
         *c = getc(fptr);
         if (*c == EOF) {
-            strcpy(t->lx, "Error: End of file in string");
+            strcpy(t->lx, "Error: unexpected eof in comment");
             t->ln = lineNumber;
             t->ec = EofInStr;
             t->tp = ERR;
@@ -73,14 +73,12 @@ void mLineComments(Token *t, char *c) {
         if (*c != '*')
             continue;
 
-
         // Get another character
         *c = getc(fptr); 
         if (*c != '/') {
             ungetc(*c, fptr);
             continue;
         }
-
         break;
     }
 
@@ -93,29 +91,24 @@ void rmComments(Token *t, char *c) {
     // Get one more Char
     char C = getc(fptr);
 
-    switch (C) {
-        case '/': 
-        {
-            // Single line comment
-            while(*c != '\n') {
-                *c = getc(fptr);
-            }
-            break;
-        } 
-        case '*':
-        {
-            // Multi Line comments
-            mLineComments(t, c);
-            break;
+    if (C == '/') {
+        // Single line comment
+        while(*c != '\n') {
+            *c = getc(fptr);
         }
-        default:
-        {
-            t->ln    = lineNumber;
-            t->lx[0] = *c;
-            t->lx[1] = '\0';
-            t->tp    = SYMBOL;
-        }
+        return;
+    } else if (C == '*') {
+        // Multi Line comments
+        mLineComments(t, c);
+        return;
     }
+
+    // Else it's a '/' symbol
+    t->ln    = lineNumber;
+    t->lx[0] = *c;
+    t->lx[1] = '\0';
+    t->tp    = SYMBOL;
+
 }
 
 
@@ -147,6 +140,22 @@ void getId(Token *t, char c) {
     strcpy(t->lx, temp);
 }
 
+void getBadStr(Token *t, char c) {
+    if (c == '\n') {
+        strcpy(t->lx, "Error: new line in string");
+        t->ec = NewLnInStr;
+        t->tp = ERR;
+        t->ln = lineNumber; 
+        return;
+    } else if (c == EOF) {
+        strcpy(t->lx, "Error: unexpected eof in string constant");
+        t->ec = EofInStr;
+        t->tp = ERR;
+        t->ln = lineNumber; 
+        return;
+    }
+}
+
 
 void getStr(Token *t) {
     int i = 0;
@@ -167,19 +176,11 @@ void getStr(Token *t) {
             t->tp = STRING;
             t->ln = lineNumber; 
             return;
-            
-        } else if (c == '\n') {
-            strcpy(t->lx, "Error: New line in string");
-            t->ec = NewLnInStr;
-            t->tp = ERR;
-            t->ln = lineNumber; 
+
+        } else if (c == '\n' || c == EOF) {
+            getBadStr(t, c);
             return;
-        } else if (c == EOF) {
-            strcpy(t->lx, "Error: End of file in string");
-            t->ec = EofInStr;
-            t->tp = ERR;
-            t->ln = lineNumber; 
-            return;
+
         } else if (c == '"') {
             temp[i+1] = '\0';
             strcpy(t->lx, temp);
@@ -203,18 +204,23 @@ void getInt(Token *t, char c) {
         i++;
 
         if (i >= MAX_LEXEME_LENGTH -1) {
+            // Truncate the lexeme
             temp[i] = '\0';
             strcpy(t->lx, temp);
             t->ln = lineNumber; 
             t->tp = INT;
+            ungetc(c, fptr);
+            return;
         }
     }
+
     temp[i] = '\0';
     strcpy(t->lx, temp);
     t->ln = lineNumber; 
     t->tp = INT;
     ungetc(c, fptr);
 }
+
 
 void getSym(Token *t, char c) {
     for (int i = 0; i < 19; ++i) {
@@ -227,8 +233,7 @@ void getSym(Token *t, char c) {
         t->tp    = SYMBOL;
         return;
     }
-    t->lx[0] = c;
-    t->lx[1] = '\0';
+    strcpy(t->lx, "Error: illegal symbol in source file");
     t->ec    = IllSym;
     t->tp    = ERR;
     t->ln    = lineNumber;
@@ -238,18 +243,19 @@ void getSym(Token *t, char c) {
 // Initialise the lexer to read from source file
 // File_name is the name of the src file
 int InitLexer (char* file_name) {
-  fileName = file_name;
-  lineNumber = 1;
+    fileName = file_name;
+    lineNumber = 1;
 
-  fptr = fopen(file_name, "r");
-  if (!fptr) {
-    printf("Error: Bad File Name \"%s\"\n", file_name);
-    return 0;
-  }
-  return 1;
+    fptr = fopen(file_name, "r");
+    if (!fptr) {
+        printf("Error: Bad File Name \"%s\"\n", file_name);
+        return 0;
+    }
+    return 1;
 }
 
 
+// Consume whitespace
 void trimSpace(char *c) {
     while (isspace(*c)) {
         if (*c == '\n')
