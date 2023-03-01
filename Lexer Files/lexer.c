@@ -308,9 +308,15 @@ Token GetNextToken () {
 
 // peek (look) at the next token in the source file without removing it from the stream
 Token PeekNextToken () {
-  Token t;
-  t.tp = ERR;
-  return t;
+    fpos_t p; // make a note of the current position in the file
+    fgetpos(fptr, &p);
+    int oldLn = lineNumber;  // make a note of the line number
+
+    Token t = GetNextToken();
+    
+    fsetpos(fptr, &p); // Set the position back to the previous position
+    lineNumber = oldLn;
+    return t;
 }
 
 
@@ -331,12 +337,14 @@ int main (int argc, char **argv)
 
     FILE *fOut = fopen(argv[2], "w");
 
-    Token t;
+    Token t, t2;
     int i = 0;
     while (t.tp != EOFile && t.tp != ERR) {
         t = GetNextToken();
-        fprintf(fOut, "< %s, %i, %s, %s >\n",
-                t.fl, t.ln, t.lx, tokenTypes[t.tp]);
+        t2 = PeekNextToken();
+        fprintf(fOut, "Token < %s, %i, %s, %s >, Next token < %s, %i, %s, %s > \n",
+                t.fl, t.ln, t.lx, tokenTypes[t.tp],
+                t2.fl, t2.ln, t2.lx, tokenTypes[t2.tp]);
         i++;
     }
 
