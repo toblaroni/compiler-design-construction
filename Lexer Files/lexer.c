@@ -142,7 +142,7 @@ void getId(Token *t, char c) {
 
 void getBadStr(Token *t, char c) {
     if (c == '\n') {
-        strcpy(t->lx, "Error: new line in string");
+        strcpy(t->lx, "Error: new line in string constant");
         t->ec = NewLnInStr;
         t->tp = ERR;
         t->ln = lineNumber; 
