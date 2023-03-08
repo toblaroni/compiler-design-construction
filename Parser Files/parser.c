@@ -6,22 +6,45 @@
 #include "parser.h"
 
 
-// you can declare prototypes of parser functions below
-
-
+// Function Prototypes
+ParserInfo error(char *msg, Token T);
+void classDecl();
+void memberDecl();
+void classVarDecl();
+void type();
+void subroutineDecl();
+void paramList();
+void subroutineBody();
+void stmt();
+void varDeclarStmt();
+void letStmt();
+void ifStmt();
+void whileStmt();
+void doStmt();
+void subroutineCall();
+void expressionList();
+void returnStmt();
+void expression();
+void relationalExpression();
+void arithmeticExpression();
+void term();
+void factor();
+void operand();
 
 
 int InitParser (char* file_name)
 {
-
-	return 1;
+	return InitLexer(file_name);
 }
 
 ParserInfo Parse ()
 {
 	ParserInfo pi;
+	Token t = GetNextToken();
 
-	// implement the function
+	// Expect class declaration
+	if ( !strcmp(t.lx, "class") && t.tp == RESWORD )
+		; // Be happy :) 
 
 
 	pi.er = none;
@@ -31,7 +54,7 @@ ParserInfo Parse ()
 
 int StopParser ()
 {
-	return 1;
+	return StopLexer();
 }
 
 #ifndef TEST_PARSER
