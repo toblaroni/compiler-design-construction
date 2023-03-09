@@ -41,6 +41,7 @@ int InitParser (char* file_name) {
 
 
 ParserInfo Parse () {
+	pi.er = none;
 	pi = classDecl();
 	return pi;
 }
@@ -55,6 +56,7 @@ ParserInfo classDecl() {
 	else {
 		pi = error("keyword 'class' expected");
 		pi.er = classExpected;
+		return pi;
 	}
 
 	// Expect class id 
@@ -64,6 +66,7 @@ ParserInfo classDecl() {
 	else {
 		pi = error("identifier expected at this position");
 		pi.er = idExpected;
+		return pi;
 	}
 
 	// Expect Open brace
@@ -74,9 +77,12 @@ ParserInfo classDecl() {
 	else {
 		pi = error("'{' expected at this position.");
 		pi.er = openBraceExpected;
+		return pi;
 	}
 
 	// Expect 0 or more member declarations
+	// t = PeekNextToken();
+
 	
 	// Expect closing brace
 	t = GetNextToken();
@@ -85,15 +91,13 @@ ParserInfo classDecl() {
 	else {
 		pi = error("'}' expected.");
 		pi.er = openBraceExpected;
+		return pi;
 	}
 	
 	return pi;
 }
 
 
-int StopParser () {
-	return StopLexer();
-}
 
 
 ParserInfo error(char *msg) {
@@ -103,10 +107,19 @@ ParserInfo error(char *msg) {
 	return pi;
 }
 
+int StopParser () {
+	return StopLexer();
+}
 
 #ifndef TEST_PARSER
-int main () {
+int main (int argc, char **argv) {
+	InitParser(argv[1]);	
 
-	return 1;
+	if (Parse().er != none) {
+		exit(1);
+	};
+	
+	printf("Successfully parsed source file\n");
+	return 0;
 }
 #endif
