@@ -1,3 +1,7 @@
 /* Wagwan for batty man */
+class toader {
+    // Static fields
+    static int sym;
 
-class {}
+    fied int id;
+}

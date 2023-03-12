@@ -10,7 +10,8 @@ Token t;
 ParserInfo pi;
 
 // Function Prototypes
-ParserInfo error(char *msg);
+void printToken(Token t);
+ParserInfo error(char *msg, SyntaxErrors e);
 ParserInfo classDecl();
 ParserInfo memberDecl();
 ParserInfo classVarDecl();
@@ -54,9 +55,7 @@ ParserInfo classDecl() {
 	if ( !strcmp(t.lx, "class") && t.tp == RESWORD )
 		; // Be happy :) 
 	else {
-		pi = error("keyword 'class' expected");
-		pi.er = classExpected;
-		return pi;
+		return error("keyword 'class' expected", classExpected);
 	}
 
 	// Expect class id 
@@ -64,9 +63,7 @@ ParserInfo classDecl() {
 	if ( t.tp == ID )
 		; // We good
 	else {
-		pi = error("identifier expected at this position");
-		pi.er = idExpected;
-		return pi;
+		return error("identifier expected at this position", idExpected);
 	}
 
 	// Expect Open brace
@@ -75,40 +72,131 @@ ParserInfo classDecl() {
 	if ( t.tp == SYMBOL && !strcmp(t.lx, "{"))
 		; // Excellent
 	else {
-		pi = error("'{' expected at this position.");
-		pi.er = openBraceExpected;
-		return pi;
+		return error("'{' expected at this position.", openBraceExpected);
 	}
 
 	// Expect 0 or more member declarations
-	// t = PeekNextToken();
+	t = PeekNextToken();
+	while (strcmp(t.lx, "}") && t.tp != EOFile) {
+		pi = memberDecl();
 
+		// If there's an error return pi
+		if (pi.er != none)
+			return pi;
+
+		t = PeekNextToken();
+	}
 	
 	// Expect closing brace
 	t = GetNextToken();
-	if ( t.tp == SYMBOL && !strcmp(t.lx, "} at this position"))
+	if ( t.tp == SYMBOL && !strcmp(t.lx, "}"))
 		; // Excellent
 	else {
-		pi = error("'}' expected.");
-		pi.er = openBraceExpected;
-		return pi;
+		return error("'}' expected.", closeBraceExpected);
 	}
 	
 	return pi;
 }
 
 
+ParserInfo memberDecl() {
+	t = GetNextToken();
+
+	// Either a classVar Declaration or subroutine declaration
+	if (!strcmp(t.lx, "static") || !strcmp(t.lx, "field"))
+		return classVarDecl();
+	else if (!strcmp(t.lx, "constructor") || !strcmp(t.lx, "function") || !strcmp(t.lx, "method")) 
+		return subroutineDecl();
+	else 
+		return error("class member declaration must begin with static, field, constructor, function or method",
+				      memberDeclarErr);
+
+	return pi;				  
+}
 
 
-ParserInfo error(char *msg) {
+ParserInfo classVarDecl() {
+	// Expect type
+	pi = type();	
+	if (pi.er != none) 
+		return pi;
+
+	// Expect an identifier
+	t = GetNextToken();
+	if (t.tp == ID)
+		; // Happy days :D
+	else
+		return error("identifier expected", idExpected);
+
+	// 0 or more ", identifier"
+	t = PeekNextToken();
+	// If semi colon then exit
+	while (strcmp(t.lx, ";") && !strcmp(t.lx, ",")) {
+		// Comma
+		t = GetNextToken();
+		if (!strcmp(t.lx, ","))
+			; // Gravy
+		else
+			return error("comma expected after identifier", syntaxError);
+
+		// Identifier
+		// Expect an identifier **** TURN IT INTO OWN FUNCTION ****
+		t = GetNextToken();
+		if (t.tp == ID)
+			; // Happy days :D
+		else
+			return error("identifier expected", idExpected);
+
+		t = PeekNextToken();
+	}
+
+	// Expect semi colon
+	t = GetNextToken();
+	if (!strcmp(t.lx, ";"))
+		;  // Whoopdey do 
+	else
+		return error("; expected", semicolonExpected);
+
+	return pi;
+}
+
+ParserInfo type() {
+	t = GetNextToken();
+	
+	if ((!strcmp(t.lx, "int")     || !strcmp(t.lx, "char") ||
+		 !strcmp(t.lx, "boolean") || t.tp == ID))
+		;  // Big time!
+	else
+		error("a type must be int, char, boolean or identifier", illegalType);
+
+	return pi;
+}
+
+
+ParserInfo subroutineDecl() {
+	return pi;
+}
+
+
+ParserInfo error(char *msg, SyntaxErrors e) {
 	ParserInfo pi;
-	printf("Error, line %i, close to %s, %s.\n", t.ln, t.lx, msg);
 	pi.tk = t;
+	pi.er = e;
+	if (t.tp == ERR) {
+		printf("%s at line %i\n", t.lx, t.ln);
+		pi.er = lexerErr;
+	}
+	else 
+		printf("Error, line %i, close to %s, %s.\n", t.ln, t.lx, msg);
 	return pi;
 }
 
 int StopParser () {
 	return StopLexer();
+}
+
+void printToken(Token t) {
+	printf("Current token is %s\n", t.lx);
 }
 
 #ifndef TEST_PARSER
