@@ -115,8 +115,6 @@ void classVarDecl() {
 		else
 			error("comma expected after identifier", syntaxError);
 
-		// Identifier
-		// Expect an identifier **** TURN IT INTO OWN FUNCTION ****
 		expId();
 
 		t = PeekNextToken();
@@ -208,19 +206,68 @@ void subroutineBody() {
 	expOBrace();
 	
 	// 0 or more statement
-	t = GetNextToken();
-	while (strcmp(t.lx, "}")) {
+	t = PeekNextToken();
+	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
+		   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
 		statement();
 		t = PeekNextToken();
 	}
 	
-	// Close brace
 	expCBrace();
 }
 
 
 void statement() {
+	t = PeekNextToken();
+	if (!strcmp(t.lx, "var"))
+		varDeclarStmt();
+	else if (!strcmp(t.lx, "let"))
+		letStmt();
+	else if (!strcmp(t.lx, "if"))
+		ifStmt();
+	else if (!strcmp(t.lx, "while"))
+		whileStmt();
+	else if (!strcmp(t.lx, "do"))
+		doStmt();
+	else if (!strcmp(t.lx, "return"))
+		returnStmt();
+}
 
+
+void varDeclarStmt() {
+	t = GetNextToken();
+	if (!strcmp(t.lx, "var"))
+		;  // Look on down from the bridggeeee
+	else
+		error("var keyword expected", syntaxError);
+
+	type();
+
+	expId();
+
+	// 0 Or 1 [ expression ]
+	t = PeekNextToken();
+	if (strcmp(t.lx, "[")) {
+		expression();
+
+		// Closing ]
+		if (strcmp(t.lx, "]"))
+			;  // :::::DDDDDDD
+		else
+			error("] expected", closeBracketExpected);
+	}
+
+	// Equal sign
+	if (!strcmp(t.lx, "="))
+		;  // Look on down from the bridggeeee
+	else
+		error("= expected", equalExpected);
+	
+	
+	// Expression
+	expression();
+	
+	expSColon();
 }
 
 
