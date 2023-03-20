@@ -242,19 +242,27 @@ void varDeclarStmt() {
 		error("var keyword expected", syntaxError);
 
 	type();
+	if (pi.er)
+		return;
 
 	expId();
+	if (pi.er)
+		return;
 
 	// 0 Or 1 [ expression ]
 	t = PeekNextToken();
-	if (strcmp(t.lx, "[")) {
+	if (!strcmp(t.lx, "[")) {
 		expression();
+		if (pi.er)
+			return;
 
 		// Closing ]
-		if (strcmp(t.lx, "]"))
+		if (!strcmp(t.lx, "]"))
 			;  // :::::DDDDDDD
-		else
+		else {
 			error("] expected", closeBracketExpected);
+			return;
+		}
 	}
 
 	// Equal sign
@@ -266,8 +274,224 @@ void varDeclarStmt() {
 	
 	// Expression
 	expression();
+	if (pi.er)
+		return;
 	
 	expSColon();
+	if (pi.er)
+		return;
+}
+
+
+void letStmt() {
+	// Let keyword
+	t = GetNextToken();
+	if (!strcmp(t.lx, "let"))
+		;  // We're just obvious
+	else {
+		error("let keyword expected", syntaxError);
+		return;
+	}
+
+	expId();
+	// Check for errors
+	if (pi.er)
+		return;
+
+	// 0 Or 1 [ expression ]
+	t = PeekNextToken();
+	if (!strcmp(t.lx, "[")) {
+		expression();
+		if (pi.er)
+			return;
+
+		// Closing ]
+		if (strcmp(t.lx, "]"))
+			;  // :::::DDDDDDD
+		else {
+			error("] expected", closeBracketExpected);
+			return;
+		}
+	}
+
+	t = GetNextToken();
+	if (!strcmp(t.lx, "="))
+		;  // Yeah that's calm
+	else {
+		error("= expected", equalExpected);
+		return;
+	}
+
+	expression();
+	if (pi.er)
+		return;
+
+	expSColon();
+	if (pi.er)
+		return;
+}
+
+
+void ifStmt() {
+	t = GetNextToken();
+	if (!strcmp(t.lx, "if"))
+		;  // Think for yourself. figure it out yourself
+	else {
+		error("if keyword expected", syntaxError);
+		return;
+	}
+
+	expOParen();
+	if (pi.er)
+		return;
+
+	expression();
+	if (pi.er)
+		return;
+
+	expCParen();
+	if (pi.er)
+		return;
+
+	expOBrace();
+	if (pi.er)
+		return;
+
+	t = PeekNextToken();
+	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
+		   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
+		statement();
+		t = PeekNextToken();
+	}
+
+	expCBrace();
+	if (pi.er)
+		return;
+
+	t = PeekNextToken();
+	if (!strcmp(t.lx, "else")) {
+		// Consume the token
+		GetNextToken();
+
+		expOBrace();
+		if (pi.er)
+			return;
+
+		t = PeekNextToken();
+		while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
+			   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
+			statement();
+			t = PeekNextToken();
+		}
+
+		expCBrace();
+		if (pi.er)
+			return;
+	}
+}
+
+
+void whileStmt() {
+	t = GetNextToken();
+	if (!strcmp(t.lx, "while"))
+		;  // Big time mega chilling
+	else {
+		error("while keyword expected", syntaxError);
+		return;
+	}
+
+	expOParen();
+	if (pi.er)
+		return;
+
+	expression();
+	if (pi.er)
+		return;
+
+	expCParen();
+	if (pi.er)
+		return;
+
+	expOBrace();
+	if (pi.er)
+		return;
+
+	t = PeekNextToken();
+	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
+		   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
+		statement();
+		t = PeekNextToken();
+	}
+
+	expCBrace();
+	if (pi.er)
+		return;
+}
+
+
+void doStmt() {
+	t = GetNextToken();
+	if (!strcmp(t.lx, "do"))
+		;  // Love you
+	else {
+		error("expected do keyword", syntaxError);
+		return;
+	}
+
+	subroutineCall();
+	if (pi.er)
+		return;
+
+	expSColon();
+	if (pi.er)
+		return;
+}
+
+
+void subroutineCall() {
+	expId();
+	if (pi.er)
+		return;
+
+	t = PeekNextToken();
+	if (!strcmp(t.lx, ".")) {
+		GetNextToken(); // Consume token
+		expId();
+		if (pi.er)
+			return;
+	}
+
+	expOParen();
+	if (pi.er)
+		return;
+
+	expressionList();
+	if (pi.er)
+		return;
+
+	expCParen();
+	if (pi.er)
+		return;
+}
+
+
+void expressionList() {
+	// CAN ALSO BE NOTHING
+
+	expression();
+	if (pi.er)
+		return;
+
+	t = PeekNextToken();
+	while (!strcmp(t.lx, ",")) {
+		GetNextToken();
+
+		expression();
+		if (pi.er)
+			return;
+
+		t = PeekNextToken();
+	}
 }
 
 
