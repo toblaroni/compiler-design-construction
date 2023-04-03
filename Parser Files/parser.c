@@ -67,19 +67,27 @@ void classDecl() {
 
 	// Expect class id 
 	expId();
+	if (pi.er)
+		return;
 
 	// Expect Open brace
 	expOBrace();
+	if (pi.er)
+		return;
 
 	// Expect 0 or more member declarations
 	t = PeekNextToken();
 	while (strcmp(t.lx, "}")) {
 		memberDecl();
+		if (pi.er)
+			return;
 		t = PeekNextToken();
 	}
 	
 	// Expect closing brace
 	expCBrace();
+	if (pi.er)
+		return;
 }
 
 
@@ -94,15 +102,21 @@ void memberDecl() {
 	else 
 		error("class member declaration must begin with static, field, constructor, function or method",
 				      memberDeclarErr);
+	if (pi.er)
+		return;
 }
 
 
 void classVarDecl() {
 
 	type();	
+	if (pi.er)
+		return;
 
 	// Expect an identifier
 	expId();
+	if (pi.er)
+		return;
 
 	// 0 or more ", identifier"
 	t = PeekNextToken();
@@ -112,16 +126,22 @@ void classVarDecl() {
 		t = GetNextToken();
 		if (!strcmp(t.lx, ","))
 			; // Gravy
-		else
+		else {
 			error("comma expected after identifier", syntaxError);
+			return;
+		}
 
 		expId();
+		if (pi.er)
+			return;
 
 		t = PeekNextToken();
 	}
 
 	// Expect semi colon
 	expSColon();
+	if (pi.er)
+		return;
 }
 
 void type() {
@@ -143,9 +163,11 @@ void subroutineDecl() {
 		 !strcmp(t.lx, "function")    || 
 		 !strcmp(t.lx, "method")))
 		;  // We groovin' 
-	else
+	else {
 		error("subroutine declaration must begin with constructor, function or method",
-					 subroutineDeclarErr);
+			   subroutineDeclarErr);
+		return;
+	}
 		
 	t = PeekNextToken();
 	//  type or void
@@ -154,19 +176,31 @@ void subroutineDecl() {
 	else if ((!strcmp(t.lx, "int")     || !strcmp(t.lx, "char") ||
 		      !strcmp(t.lx, "boolean") || t.tp == ID))
 		;  // Big time!
-	else
+	else {
 		error("expected void or type", syntaxError);
+		return;
+	}
 
 
 	expId();
+	if (pi.er)
+		return;
 
 	expOParen();
+	if (pi.er)
+		return;
 
 	paramList();
+	if (pi.er)
+		return;
 
 	expCParen();
+	if (pi.er)
+		return;
 
 	subroutineBody();  // We want that subroutine body
+	if (pi.er)
+		return;
 }
 
 
@@ -179,8 +213,12 @@ void paramList() {
 		return;
 
 	type();
+	if (pi.er)
+		return;
 
 	expId();
+	if (pi.er)
+		return;
 	
 	t = PeekNextToken();	
 
@@ -190,12 +228,18 @@ void paramList() {
 		t = GetNextToken();
 		if (!strcmp(t.lx, ","))
 			;  // Just what we needed !!
-		else
+		else {
 			error(", expected", syntaxError);
+			return;
+		}
 
 		type();
+		if (pi.er)
+			return;
 
 		expId();
+		if (pi.er)
+			return;
 
 		t = PeekNextToken();
 	}
@@ -204,16 +248,20 @@ void paramList() {
 
 void subroutineBody() {
 	expOBrace();
+	if (pi.er)
+		return;
 	
 	// 0 or more statement
 	t = PeekNextToken();
-	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
-		   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
+	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let") || !strcmp(t.lx, "if")  ||
+		   !strcmp(t.lx, "while") || !strcmp(t.lx, "do")  || !strcmp(t.lx, "return")) {
 		statement();
 		t = PeekNextToken();
 	}
 	
 	expCBrace();
+	if (pi.er)
+		return;
 }
 
 
@@ -231,6 +279,10 @@ void statement() {
 		doStmt();
 	else if (!strcmp(t.lx, "return"))
 		returnStmt();
+	else {
+		error( "Expected statement", syntaxError );
+		return;
+	}
 }
 
 
@@ -238,8 +290,10 @@ void varDeclarStmt() {
 	t = GetNextToken();
 	if (!strcmp(t.lx, "var"))
 		;  // Look on down from the bridggeeee
-	else
+	else {
 		error("var keyword expected", syntaxError);
+		return;
+	}
 
 	type();
 	if (pi.er)
@@ -268,9 +322,10 @@ void varDeclarStmt() {
 	// Equal sign
 	if (!strcmp(t.lx, "="))
 		;  // Look on down from the bridggeeee
-	else
+	else {
 		error("= expected", equalExpected);
-	
+		return;
+	}
 	
 	// Expression
 	expression();
@@ -357,6 +412,7 @@ void ifStmt() {
 	if (pi.er)
 		return;
 
+	// Zero or more statements
 	t = PeekNextToken();
 	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
 		   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
@@ -417,8 +473,8 @@ void whileStmt() {
 		return;
 
 	t = PeekNextToken();
-	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
-		   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
+	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let") || !strcmp(t.lx, "if")  ||
+		   !strcmp(t.lx, "while") || !strcmp(t.lx, "do")  || !strcmp(t.lx, "return")) {
 		statement();
 		t = PeekNextToken();
 	}
@@ -477,6 +533,15 @@ void subroutineCall() {
 
 void expressionList() {
 	// CAN ALSO BE NOTHING
+	// Expression can start with - | ~ | int | id | ( | string | true | false | null | this
+	// If it doesn't start with any of these then return 
+	t = PeekNextToken();
+	if ( strcmp(t.lx, "-")     && strcmp(t.lx, "~") &&
+		 strcmp(t.lx, "(")     && strcmp(t.lx, "true") &&
+		 strcmp(t.lx, "false") && strcmp(t.lx, "null") &&
+		 strcmp(t.lx, "this")  && t.tp != INT && 
+		 t.tp != ID && t.tp != STRING )
+		return;
 
 	expression();
 	if (pi.er)
@@ -492,6 +557,35 @@ void expressionList() {
 
 		t = PeekNextToken();
 	}
+}
+
+
+void returnStmt() {
+	t = GetNextToken();
+	if (!strcmp(t.lx, "return"))
+		;  // We good yo
+	else {
+		error( "'return' keyword expected", syntaxError );
+	}
+
+	// 0 or 1 expressions
+	t = PeekNextToken();
+	if ( !strcmp(t.lx, "-")     || strcmp(t.lx, "~")	|| 
+		 !strcmp(t.lx, "(")     || strcmp(t.lx, "true") ||
+		 !strcmp(t.lx, "false") || strcmp(t.lx, "null") ||
+		 !strcmp(t.lx, "this")  || t.tp != INT ||
+		 t.tp == ID && t.tp == STRING ) {
+
+		expression();
+		if (pi.er)
+			return;
+	}
+
+	expSColon();
+	if (pi.er)
+		return;
+
+
 }
 
 
