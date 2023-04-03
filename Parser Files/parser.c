@@ -10,7 +10,6 @@
 Token t;
 ParserInfo pi;
 
-
 // Function Prototypes
 void error(char *msg, SyntaxErrors e);
 void classDecl();
@@ -584,8 +583,143 @@ void returnStmt() {
 	expSColon();
 	if (pi.er)
 		return;
+}
 
 
+void expression() {
+	// Relational expression
+	relationalExpression();
+	if (pi.er)
+		return;
+
+	// 0 or more & or | followed by a relationalExpression()
+	t = GetNextToken();
+	while ( !strcmp(t.lx, "&") || !strcmp(t.lx, "|") ) {
+		relationalExpression();
+		if (pi.er)
+			return;
+
+		t = PeekNextToken();
+	}
+}
+
+
+void relationalExpression() {
+	// Arithmetic expression
+	arithmeticExpression();
+	if (pi.er)
+		return;
+
+	// 0 or more = or > or < followed by a arithmeticExpression()
+	t = GetNextToken();
+	while ( !strcmp(t.lx, "=") || !strcmp(t.lx, ">") || !strcmp(t.lx, "<") ) {
+		arithmeticExpression();
+		if (pi.er)
+			return;
+
+		t = PeekNextToken();
+	}
+}
+
+
+void arithmeticExpression() {
+	// Term
+	term();
+	if (pi.er)
+		return;
+
+	// zero or more + or - followed by an arithmeticExpression()
+	t = GetNextToken();
+	while ( !strcmp(t.lx, "-") || !strcmp(t.lx, "+") ) {
+		term();
+		if (pi.er)
+			return;
+
+		t = PeekNextToken();
+	}
+}
+
+
+void term() {
+	// Exp either - or ~ or nothing.
+	t = PeekNextToken();
+	if ( !strcmp(t.lx, "-") || !strcmp(t.lx, "~") )
+		GetNextToken(); // Consume the token
+	
+	// Exp operand
+	operand();
+	if (pi.er)
+		return;
+}
+
+
+void operand() {
+	t = GetNextToken();
+	if (t.tp == INT)
+		return; // Integer constant
+
+	// ID [ .ID ] [ [ expression ] | ( expressionList ) ]
+	if (t.tp == ID) {
+		t = PeekNextToken();
+		if (!strcmp(t.lx, ".")) {
+			GetNextToken(); // consume token
+			t = GetNextToken();
+			if (t.tp == ID)
+				; // Chillin'
+			else {
+				error("identifier expected", idExpected);
+				return;
+			}
+		}
+
+		if (!strcmp(t.lx, "[")) {
+			GetNextToken(); // Consume token
+							
+			expression();
+			if (pi.er)
+				return;
+			
+			t = GetNextToken();
+			if (!strcmp(t.lx, "]"))
+				; // Jazzy
+			else {
+				error("] expected", closeBracketExpected);
+				return;
+			}
+		} else if (!strcmp(t.lx, "(")) {
+			GetNextToken();
+
+			expressionList();
+			if (pi.er)
+				return;
+
+			expCParen();
+			if (pi.er)
+				return;
+		}
+		return;
+	}
+
+	if (!strcmp(t.lx, "(")) {
+		expression();
+		if (pi.er)
+			return;
+
+		expCParen();
+		return;
+	}
+
+	if (t.tp == STRING)
+		return;
+
+	if (t.tp != RESWORD) {
+		error("expected operand", syntaxError);
+		return;
+	}
+
+	if ( !strcmp(t.lx, "true") || !strcmp(t.lx, "false") ||
+		 !strcmp(t.lx, "null") || !strcmp(t.lx, "this") )
+		return;
 }
 
 
