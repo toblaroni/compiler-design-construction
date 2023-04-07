@@ -91,7 +91,6 @@ void classDecl() {
 
 void memberDecl() {
 	t = PeekNextToken();
-
 	// Either a classVar Declaration or subroutine declaration
 	if (!strcmp(t.lx, "static") || !strcmp(t.lx, "field"))
 		classVarDecl();
@@ -106,6 +105,14 @@ void memberDecl() {
 
 
 void classVarDecl() {
+	t = GetNextToken();
+	if (!strcmp(t.lx, "static") || !strcmp(t.lx, "field"))
+		; // Oh yeah let's flipping go
+	else {
+		error("class member declaration must begin with static, field, constructor, function or method",
+				      memberDeclarErr);
+		return;
+	}
 
 	type();	
 	if (pi.er)
@@ -577,6 +584,7 @@ void expression() {
 	// 0 or more & or | followed by a relationalExpression()
 	t = PeekNextToken();
 	while ( !strcmp(t.lx, "&") || !strcmp(t.lx, "|") ) {
+		GetNextToken(); // Consume the token
 		relationalExpression();
 		if (pi.er)
 			return;
@@ -797,7 +805,7 @@ int StopParser () {
 
 #ifndef TEST_PARSER
 int main (void) {
-	InitParser("Main.jack");	
+	InitParser("test.jack");	
 
 	if (Parse().er) {
 		exit(1);
