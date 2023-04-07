@@ -267,8 +267,8 @@ void trimSpace(char *c) {
 
 // Get the next token from the source file
 Token GetNextToken () {
-	Token t = {};
-    strcpy(t.fl, fileName); // Set the filename of source
+	Token tk = {};
+    strcpy(tk.fl, fileName); // Set the filename of source
 
     char c = getc(fptr);
 
@@ -277,32 +277,32 @@ Token GetNextToken () {
 
     // Remove comments 
     while (c == '/') {
-        rmComments(&t, &c);
+        rmComments(&tk, &c);
         trimSpace(&c);
-        if (t.tp == SYMBOL || t.tp == ERR)
-            return t;
+        if (tk.tp == SYMBOL || tk.tp == ERR)
+            return tk;
     }
 
 
     if (c == EOF) {
-        strcpy(t.lx, "End of File");
-        t.tp = EOFile;
-        t.ln = lineNumber;
-        return t;
+        strcpy(tk.lx, "End of File");
+        tk.tp = EOFile;
+        tk.ln = lineNumber;
+        return tk;
     }
         
     // Handle identifiers and keywords
     if (isalpha(c) || c == '_') {
-        getId(&t, c);
+        getId(&tk, c);
     } else if (c == '"') {
-        getStr(&t); // Get strings
+        getStr(&tk); // Get strings
     } else if (isdigit(c)) {
-        getInt(&t, c); // Integers
+        getInt(&tk, c); // Integers
     } else 
-        getSym(&t, c); // Symbols
+        getSym(&tk, c); // Symbols
 
     peekNl(&c);
-    return t;
+    return tk;
 }
 
 

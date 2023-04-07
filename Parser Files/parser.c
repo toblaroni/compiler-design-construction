@@ -805,7 +805,7 @@ int StopParser () {
 
 #ifndef TEST_PARSER
 int main (void) {
-	InitParser("test.jack");	
+	InitParser("Main.jack");	
 
 	if (Parse().er) {
 		exit(1);
