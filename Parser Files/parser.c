@@ -1,4 +1,3 @@
-#include <bits/pthreadtypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -144,7 +143,7 @@ void classVarDecl() {
 }
 
 void type() {
-	GetNextToken();
+	t = GetNextToken();
 	
 	if ((!strcmp(t.lx, "int")     || !strcmp(t.lx, "char") ||
 		 !strcmp(t.lx, "boolean") || t.tp == ID))
@@ -168,13 +167,11 @@ void subroutineDecl() {
 		return;
 	}
 		
-	t = PeekNextToken();
-	//  type or void
-	if (!strcmp(t.lx, "void"))  // If the lexeme is "void" or we have a type
+	t = GetNextToken();
+	// void or type
+	if (!strcmp(t.lx, "void") || !strcmp(t.lx, "int")  || 
+		!strcmp(t.lx, "char") || !strcmp(t.lx, "boolean") || t.tp == ID)  // If the lexeme is "void" or we have a type
 		;  // We mega chillin
-	else if ((!strcmp(t.lx, "int")     || !strcmp(t.lx, "char") ||
-		      !strcmp(t.lx, "boolean") || t.tp == ID))
-		;  // Big time!
 	else {
 		error("expected void or type", syntaxError);
 		return;
@@ -220,7 +217,6 @@ void paramList() {
 		return;
 	
 	t = PeekNextToken();	
-
 	// Until you hit a close parenthesis
 	while (!strcmp(t.lx, ",")) {
 		// Make sure there's a comma
@@ -302,34 +298,19 @@ void varDeclarStmt() {
 	if (pi.er)
 		return;
 
-	// 0 Or 1 [ expression ]
+	// { , id }
 	t = PeekNextToken();
-	if (!strcmp(t.lx, "[")) {
-		expression();
+	while (!strcmp(t.lx, ",")) {
+		GetNextToken(); // consume token
+
+		expId();
 		if (pi.er)
 			return;
 
-		// Closing ]
-		if (!strcmp(t.lx, "]"))
-			;  // :::::DDDDDDD
-		else {
-			error("] expected", closeBracketExpected);
-			return;
-		}
+		t = PeekNextToken();
+
 	}
 
-	// Equal sign
-	if (!strcmp(t.lx, "="))
-		;  // Look on down from the bridggeeee
-	else {
-		error("= expected", equalExpected);
-		return;
-	}
-	
-	// Expression
-	expression();
-	if (pi.er)
-		return;
 	
 	expSColon();
 	if (pi.er)
@@ -355,12 +336,15 @@ void letStmt() {
 	// 0 Or 1 [ expression ]
 	t = PeekNextToken();
 	if (!strcmp(t.lx, "[")) {
+		GetNextToken(); // consume the token
+
 		expression();
 		if (pi.er)
 			return;
 
 		// Closing ]
-		if (strcmp(t.lx, "]"))
+		t = GetNextToken();
+		if (!strcmp(t.lx, "]"))
 			;  // :::::DDDDDDD
 		else {
 			error("] expected", closeBracketExpected);
@@ -569,12 +553,10 @@ void returnStmt() {
 
 	// 0 or 1 expressions
 	t = PeekNextToken();
-	if ( !strcmp(t.lx, "-")     || strcmp(t.lx, "~")	|| 
-		 !strcmp(t.lx, "(")     || strcmp(t.lx, "true") ||
-		 !strcmp(t.lx, "false") || strcmp(t.lx, "null") ||
-		 !strcmp(t.lx, "this")  || t.tp != INT ||
-		 t.tp == ID && t.tp == STRING ) {
-
+	if ( !strcmp(t.lx, "-")     || !strcmp(t.lx, "~")	 || 
+		 !strcmp(t.lx, "(")     || !strcmp(t.lx, "true") ||
+		 !strcmp(t.lx, "false") || !strcmp(t.lx, "null") ||
+		 !strcmp(t.lx, "this")  || t.tp == INT || t.tp == ID || t.tp == STRING ) {
 		expression();
 		if (pi.er)
 			return;
@@ -593,7 +575,7 @@ void expression() {
 		return;
 
 	// 0 or more & or | followed by a relationalExpression()
-	t = GetNextToken();
+	t = PeekNextToken();
 	while ( !strcmp(t.lx, "&") || !strcmp(t.lx, "|") ) {
 		relationalExpression();
 		if (pi.er)
@@ -611,8 +593,10 @@ void relationalExpression() {
 		return;
 
 	// 0 or more = or > or < followed by a arithmeticExpression()
-	t = GetNextToken();
+	t = PeekNextToken();
 	while ( !strcmp(t.lx, "=") || !strcmp(t.lx, ">") || !strcmp(t.lx, "<") ) {
+		GetNextToken(); // consume the token
+	
 		arithmeticExpression();
 		if (pi.er)
 			return;
@@ -629,8 +613,9 @@ void arithmeticExpression() {
 		return;
 
 	// zero or more + or - followed by an arithmeticExpression()
-	t = GetNextToken();
+	t = PeekNextToken();
 	while ( !strcmp(t.lx, "-") || !strcmp(t.lx, "+") ) {
+		GetNextToken(); // Consume token
 		term();
 		if (pi.er)
 			return;
@@ -641,11 +626,30 @@ void arithmeticExpression() {
 
 
 void term() {
+	factor();
+	if (pi.er)
+		return;
+
+	// 0 or more * or / and then a factor
+	t = PeekNextToken();
+	while ( !strcmp(t.lx, "*") || !strcmp(t.lx, "/") ) {
+		GetNextToken();
+
+		factor();
+		if (pi.er)
+			return;
+
+		t = PeekNextToken();
+	}
+}
+
+
+void factor() {
 	// Exp either - or ~ or nothing.
 	t = PeekNextToken();
 	if ( !strcmp(t.lx, "-") || !strcmp(t.lx, "~") )
 		GetNextToken(); // Consume the token
-	
+
 	// Exp operand
 	operand();
 	if (pi.er)
@@ -672,6 +676,7 @@ void operand() {
 			}
 		}
 
+		t = PeekNextToken();
 		if (!strcmp(t.lx, "[")) {
 			GetNextToken(); // Consume token
 							
@@ -791,10 +796,10 @@ int StopParser () {
 
 
 #ifndef TEST_PARSER
-int main (int argc, char **argv) {
-	InitParser(argv[1]);	
+int main (void) {
+	InitParser("Main.jack");	
 
-	if (Parse().er != none) {
+	if (Parse().er) {
 		exit(1);
 	};
 	
