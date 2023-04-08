@@ -200,4 +200,3 @@ class Ball {
         do setDestination(newx, newy);
         return;
     }
-}

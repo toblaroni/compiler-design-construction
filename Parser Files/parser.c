@@ -61,6 +61,7 @@ void classDecl() {
 		; // Be happy :) 
 	else {
 		error("keyword class expected", classExpected);
+		return;
 	}
 
 	// Expect class id 
@@ -75,10 +76,14 @@ void classDecl() {
 
 	// Expect 0 or more member declarations
 	t = PeekNextToken();
-	while (strcmp(t.lx, "}")) {
+	while ( !strcmp(t.lx, "static")		 || !strcmp(t.lx, "field")    || 
+			!strcmp(t.lx, "constructor") || !strcmp(t.lx, "function") || 
+			!strcmp(t.lx, "method") ) {
+						
 		memberDecl();
 		if (pi.er)
 			return;
+
 		t = PeekNextToken();
 	}
 	
@@ -96,9 +101,12 @@ void memberDecl() {
 		classVarDecl();
 	else if (!strcmp(t.lx, "constructor") || !strcmp(t.lx, "function") || !strcmp(t.lx, "method")) 
 		subroutineDecl();
-	else 
+	else  {
 		error("class member declaration must begin with static, field, constructor, function or method",
 				      memberDeclarErr);
+		return;
+	}
+
 	if (pi.er)
 		return;
 }
@@ -126,15 +134,8 @@ void classVarDecl() {
 	// 0 or more ", identifier"
 	t = PeekNextToken();
 	// If semi colon then exit
-	while (strcmp(t.lx, ";")) {
-		// Comma
-		t = GetNextToken();
-		if (!strcmp(t.lx, ","))
-			; // Gravy
-		else {
-			error("comma expected after identifier", syntaxError);
-			return;
-		}
+	while (!strcmp(t.lx, ",")) {
+		GetNextToken(); // Consume the token
 
 		expId();
 		if (pi.er)
@@ -210,9 +211,9 @@ void subroutineDecl() {
 void paramList() {
 	// either nothing || 1 or more type id(,)
 	t = PeekNextToken();
-
 	// Check no params
-	if (!strcmp(t.lx, ")"))
+	if ( strcmp(t.lx, "int") && strcmp(t.lx, "char") && 
+		 strcmp(t.lx, "boolean") && t.tp != ID )
 		return;
 
 	type();
@@ -226,14 +227,7 @@ void paramList() {
 	t = PeekNextToken();	
 	// Until you hit a close parenthesis
 	while (!strcmp(t.lx, ",")) {
-		// Make sure there's a comma
-		t = GetNextToken();
-		if (!strcmp(t.lx, ","))
-			;  // Just what we needed !!
-		else {
-			error(", expected", syntaxError);
-			return;
-		}
+		GetNextToken();
 
 		type();
 		if (pi.er)
@@ -257,7 +251,11 @@ void subroutineBody() {
 	t = PeekNextToken();
 	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let") || !strcmp(t.lx, "if")  ||
 		   !strcmp(t.lx, "while") || !strcmp(t.lx, "do")  || !strcmp(t.lx, "return")) {
+
 		statement();
+		if (pi.er)
+			return;
+
 		t = PeekNextToken();
 	}
 	
@@ -315,7 +313,6 @@ void varDeclarStmt() {
 			return;
 
 		t = PeekNextToken();
-
 	}
 
 	
@@ -406,7 +403,11 @@ void ifStmt() {
 	t = PeekNextToken();
 	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
 		   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
+
 		statement();
+		if (pi.er)
+			return;
+		 
 		t = PeekNextToken();
 	}
 
@@ -427,6 +428,9 @@ void ifStmt() {
 		while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
 			   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
 			statement();
+			if (pi.er)
+				return;
+
 			t = PeekNextToken();
 		}
 
@@ -465,7 +469,11 @@ void whileStmt() {
 	t = PeekNextToken();
 	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let") || !strcmp(t.lx, "if")  ||
 		   !strcmp(t.lx, "while") || !strcmp(t.lx, "do")  || !strcmp(t.lx, "return")) {
+
 		statement();
+		if (pi.er)
+			return;
+
 		t = PeekNextToken();
 	}
 
@@ -556,6 +564,7 @@ void returnStmt() {
 		;  // We good yo
 	else {
 		error( "'return' keyword expected", syntaxError );
+		return;
 	}
 
 	// 0 or 1 expressions
@@ -789,12 +798,12 @@ void error(char *msg, SyntaxErrors e) {
 	pi.tk = t;
 	pi.er = e;
 	if (t.tp == ERR) {
-		printf("%s at line %i\n", t.lx, t.ln);
+	// 	printf("%s at line %i\n", t.lx, t.ln);
 		pi.er = lexerErr;
 	}
-	else 
-		printf("Error, line %i, close to %s, %s.\n", t.ln, t.lx, msg);
-	exit(1);
+	// else 
+	//	printf("Error, line %i, close to %s, %s.\n", t.ln, t.lx, msg);
+	// exit(1);
 }
 
 
@@ -805,7 +814,7 @@ int StopParser () {
 
 #ifndef TEST_PARSER
 int main (void) {
-	InitParser("Main.jack");	
+	InitParser("closeParenExpected.jack");	
 
 	if (Parse().er) {
 		exit(1);

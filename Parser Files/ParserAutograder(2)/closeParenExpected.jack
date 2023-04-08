@@ -5,15 +5,15 @@
 
 /** Represents a linked list of integers. */
 class List {
-    field int data;          // a list consists of a data field,
-    field List next;         // followed by a list
+    // field int data;          // a list consists of a data field,
+    // field List next;         // followed by a list
 
     /* Creates a List. */
-    constructor List new(int car, List cdr) {
+    /* constructor List new(int car, List cdr) {
         let data = car;       // the identifiers car and cdr are used in
         let next = cdr;       // memory of the Lisp programming language
         return this;
-    }
+    } */
 
     /** Accessors. */
     method int getData( { return data; }
