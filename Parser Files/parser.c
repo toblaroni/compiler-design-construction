@@ -798,12 +798,12 @@ void error(char *msg, SyntaxErrors e) {
 	pi.tk = t;
 	pi.er = e;
 	if (t.tp == ERR) {
-	// 	printf("%s at line %i\n", t.lx, t.ln);
+	 	printf("%s at line %i\n", t.lx, t.ln);
 		pi.er = lexerErr;
 	}
-	// else 
-	//	printf("Error, line %i, close to %s, %s.\n", t.ln, t.lx, msg);
-	// exit(1);
+	else 
+		printf("Error, line %i, close to %s, %s.\n", t.ln, t.lx, msg);
+	exit(1);
 }
 
 
@@ -814,7 +814,7 @@ int StopParser () {
 
 #ifndef TEST_PARSER
 int main (void) {
-	InitParser("closeParenExpected.jack");	
+	InitParser("Ball.jack");	
 
 	if (Parse().er) {
 		exit(1);
