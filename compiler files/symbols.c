@@ -17,33 +17,44 @@ Date Work Commenced: 08/04/23
 
 #include "symbols.h"
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-#define MAX_SYMBOL_COUNT 128
+// Initial number of tables and symbols in a table
+// If more need to be added they can be reallocated
+const int INIT_SYM_COUNT = 256;
 
-symbol symbolTable[MAX_SYMBOL_COUNT]; // Symbol table is an array of symbols
-int symbolCount; // Number of symbols
+// Is the global scope which contains the class level tables
+symbolTable programTable;
 
-// Functions for inserting a symbol, finding a symbol and initialising the symbol Table
+// Initialise the program table.
 void initSymTable() {
-	symbolCount = 0;
+	// Initialise the symbols
+	programTable.symbols = malloc( sizeof(symbol) * INIT_SYM_COUNT );
+
+	if ( programTable.symbols == NULL ) {
+		printf("COMPILER ERROR: Failed to allocate symbols\n");
+		exit(-1);
+	}
+
+	// Set the tables to null becuase there's currently no tables
+	// When we encounter a class then we allocate memory for that table
+	programTable.tables = NULL;
+
+	// Set the symbolCount and tableCount to 0
+	programTable.symbolCount = 0;
+	programTable.scopeLevel  = PROG_LVL;
 }
 
-void insertSymbol( char *name, dataType type ) {
-	symbolTable[symbolCount].dType = type;
-	strcpy( symbolTable[symbolCount].name, name );
-	symbolCount ++;
+void insertSymbol() {
 }
 
 // Loop thorugh the symbols and see if the name already exists
 // Return the index of the symbol if it exists
 // Else return -1
-int findSymbol( char *name ) {
-	
-	// Loop through array checking if the name already exists
-	for (int i = 0; i < symbolCount; ++i) {
-		if ( !strcmp(symbolTable[i].name, name) )
-			return i; // Name already exists
-	}
-	
-	return -1;
+int findSymbol() {
+	return 0;
+}
+
+void closeTable() {
 }
