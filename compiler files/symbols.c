@@ -20,33 +20,79 @@ Date Work Commenced: 08/04/23
 #include <stdlib.h>
 #include <stdio.h>
 
-// Initial number of tables and symbols in a table
-// If more need to be added they can be reallocated
-const int INIT_SYM_COUNT = 256;
+const int MAX_CLASSES = 128; // Maxiumum Classes in a program
+const int MAX_METHODS = 128; // Maxiumum methods in a class
 
 // Is the global scope which contains the class level tables
-symbolTable programTable;
+symbolTable progTable;
 
 // Initialise the program table.
 void initSymTable() {
-	// Initialise the symbols
-	programTable.symbols = malloc( sizeof(symbol) * INIT_SYM_COUNT );
-
-	if ( programTable.symbols == NULL ) {
-		printf("COMPILER ERROR: Failed to allocate symbols\n");
-		exit(-1);
-	}
 
 	// Set the tables to null becuase there's currently no tables
 	// When we encounter a class then we allocate memory for that table
-	programTable.tables = NULL;
+	progTable.tables = malloc( sizeof(symbolTable) * MAX_CLASSES );
+
+	if ( progTable.tables == NULL ) {
+		printf("COMPILER ERROR: Failed to allocate tables to program symbol table.\n");
+		exit(-1);
+	}
 
 	// Set the symbolCount and tableCount to 0
-	programTable.symbolCount = 0;
-	programTable.scopeLevel  = PROG_LVL;
+	progTable.scope = PROG_SCOPE;
+	progTable.symbolCount = 0;
+	progTable.methodCount = 0;
+	progTable.classCount  = 0;
 }
 
-void insertSymbol() {
+// Insert a symbol into the current class table
+static void insertToClass( symbol s ) {
+
+	symbolTable *currentClass = (progTable.tables + (progTable.classCount-1));
+
+	// Check to see if it's already got the maximum number of symbols
+	if ( currentClass->symbolCount == MAX_SYMBOLS ) {
+		printf("ERROR: Maxiumum number of class level symbols reached. Identifier: %s\n", s.name);
+		exit(-1);
+	}
+
+	// Insert symbol s into the class level table
+	currentClass->symbols[currentClass->symbolCount] = s;
+	currentClass->symbolCount++;
+}
+
+static void insertToMethod( symbol s ) {
+
+	symbolTable *currentClass = (progTable.tables + (progTable.classCount-1));
+	symbolTable *currentMethod = (currentClass->tables + currentClass->methodCount-1);
+	
+	if ( currentMethod->symbolCount == MAX_SYMBOLS ) {
+		printf("ERROR: Maxiumum number of method level symbols reached. Identifier: %s\n", s.name);
+		exit(-1);
+	}
+}
+
+void insertSymbol( symbol s ) {
+
+	// Check that the symbol doesn't already exist
+
+	if ( progTable.scope == CLASS_SCOPE )
+		insertToClass(s);
+	else if ( progTable.scope == METHOD_SCOPE )
+		insertToMethod(s);
+
+	// Check that the maximum number of symbols hasn't been reached
+	if ( progTable.symbolCount == MAX_SYMBOLS ) {
+		printf("ERROR: Maxiumum number of Program Level symbols reached. Identifier: %s\n", s.name);
+		exit(-1);
+	}  	
+
+
+	// Depending on what scope the table is currently at, append the table accordingly
+	if ( progTable.scope == PROG_SCOPE ) {
+		*(progTable.symbols + progTable.symbolCount) = s;
+
+	}
 }
 
 // Loop thorugh the symbols and see if the name already exists
