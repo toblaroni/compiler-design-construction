@@ -9,13 +9,13 @@
 #define CLASS_SCOPE  1
 #define METHOD_SCOPE 2
 
-
 const int MAX_SYMBOLS = 256; // Maxumimum symbols in a table
 
 // define your own types and function prototypes for the symbol table(s) module below
 typedef enum { TYPE, VAR, FUNCTION, BAD_TYPE } Type;
 typedef enum { INTEGER, PARAM, CLASS, STR, ARRAY, VOID } Kind;
 typedef enum { STATIC, FIELD } VarType;
+
 
 // Structure that holds the attributes of 
 typedef struct {
@@ -24,8 +24,8 @@ typedef struct {
   Kind returnType;
   Kind arrayType;
   VarType varType;
-
 } attributes;
+
 
 typedef struct {
   char *name;
@@ -33,11 +33,11 @@ typedef struct {
   attributes *attr; // Attributes ( Pointer to further data about the symbol )
 } symbol;
 
+
 // Holds a list of symbols and other tables
 // Program table is the top level scope
 // Then class level
 // Then method level
-
 typedef struct symbolTable symbolTable;
 
 struct symbolTable {
@@ -53,7 +53,7 @@ struct symbolTable {
 void initTable();
 void insertSymbol( symbol s ); // Insert takes a symbol and inserts it into the table
 void insertTable(); // Insert a table into an existing table
-int findSymbol();
+int findSymbol( char *name );
 void closeTable();
 
 #endif
