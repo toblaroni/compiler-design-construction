@@ -45,6 +45,7 @@ typedef struct methodTable methodTable;
 
 // Has an array of class tables
 struct programTable {
+  symbol symbols[MAX_SYMBOLS]; // For holding class names
   classTable *classes;
   unsigned int classCount; // Keep track of what class you're in
 };

@@ -101,6 +101,41 @@ int findSymbol( char *name ) {
 
 
 void closeTable() {
+	// ALso have to loop through all symbols freeing the attributes
+	for (int i = 0; i < progTable.classCount; ++i) {
+		classTable *cClass = progTable.classes + i;
+
+		for (int j = 0; j < cClass->methodCount; ++j) {
+			methodTable *cMethod = cClass->methods + j; 
+
+			// Free method level symbol attributes
+			for (int k = 0; k < cMethod->symbolCount; ++k) {
+				if (cMethod->symbols[k].attr != NULL)
+					free( cMethod->symbols[k].attr );
+			}
+		}
+
+		// Then free the class symbol attributes
+		for (int j = 0; j < cClass->symbolCount; ++j) {
+			if (cClass->symbols[j].attr != NULL)
+				free(cClass->symbols[j].attr);
+		}
+	}
+	
+	// Free all the program level symbols
+	for (int i = 0; i < progTable.classCount; ++i) {
+		if (progTable.symbols[i].attr != NULL)
+			free(progTable.symbols[i].attr);
+	}
+
+	
+	// Loop through the tables freeing up memory allocated for the table arrays
+	for (int i = 0; i < progTable.classCount; ++i) { 
+		// loop through all classes
+		free((progTable.classes + i)->methods); // Free method tables
+	}
+
+	free(progTable.classes);
 }
 
 
@@ -108,7 +143,7 @@ static int findInMethod( char *name ) {
 	methodTable *currentMethod = getCurrentMethod();
 
 	// Search Prog Level
-	for ( int i = 0; i < currentMethod->symbolCount; ++i ) {
+	for (int i = 0; i < currentMethod->symbolCount; ++i) {
 		symbol sym = currentMethod->symbols[i];
 		if (!strcmp(sym.name, name))
 			return i;
@@ -116,7 +151,7 @@ static int findInMethod( char *name ) {
 
 	// Search the class
 	int symbolIndex = findInClass( name );
-	if ( symbolIndex != -1 )
+	if (symbolIndex != -1)
 		return symbolIndex;
 
 	return -1;
@@ -191,13 +226,19 @@ void insertTable() {
 		currentClass = getCurrentClass();
 		currentClass->methodCount = 0;
 		currentClass->symbolCount = 0;
+
+		// Set all the symbol attributes to null
+		for ( int i = 0; i < MAX_SYMBOLS; ++i ) {
+			currentClass->symbols[i].attr = NULL;
+		}
+		
 		return;
 	}
 
 	// Class scope means we're inserting a method
 	// If there's already a method inside the table then we don't need to malloc
 	currentClass = getCurrentClass();
-	if ( currentClass->methodCount == 0 ) {
+	if ( currentClass->methodCount == 0 && currentClass != NULL ) {
 		// We want to allocate memory to the tables field of the current table
 		currentClass->methods = malloc( sizeof(methodTable) * MAX_METHODS );
 	}
@@ -207,15 +248,24 @@ void insertTable() {
 
 	currentMethod = getCurrentMethod();
 	currentMethod->symbolCount = 0;
+
+	// Set all the symbol attributes to null
+	for ( int i = 0; i < MAX_SYMBOLS; ++i ) {
+		currentMethod->symbols[i].attr = NULL;
+	}
 }
 
 
 static classTable *getCurrentClass() {
+	if ( progTable.classCount == 0)
+		return NULL;
 	return (progTable.classes + (progTable.classCount-1));
 }
 
 static methodTable *getCurrentMethod() {
 	classTable *currentClass = getCurrentClass();
+	if ( currentClass == NULL || currentClass->methodCount == 0 )
+		return NULL;
 	return (currentClass->methods + currentClass->methodCount-1);
 }
 
