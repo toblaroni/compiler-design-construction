@@ -12,8 +12,8 @@
 const int MAX_SYMBOLS = 256; // Maxumimum symbols in a table
 
 // define your own types and function prototypes for the symbol table(s) module below
-typedef enum { TYPE, VAR, FUNCTION, BAD_TYPE } Type;
-typedef enum { INTEGER, PARAM, CLASS, STR, ARRAY, VOID } Kind;
+typedef enum { CLASS, VAR, METHOD, BAD_TYPE } Type;
+typedef enum { INTEGER, ARG, STR, ARRAY, VOID } Kind;
 typedef enum { STATIC, FIELD } VarType;
 
 
@@ -24,6 +24,7 @@ typedef struct {
   Kind returnType;
   Kind arrayType;
   VarType varType;
+  unsigned int paramCount; // Number of parameters
 } attributes;
 
 
@@ -38,22 +39,34 @@ typedef struct {
 // Program table is the top level scope
 // Then class level
 // Then method level
-typedef struct symbolTable symbolTable;
+typedef struct programTable programTable;
+typedef struct classTable classTable;
+typedef struct methodTable methodTable;
 
-struct symbolTable {
-  symbol symbols[MAX_SYMBOLS];
-  symbolTable *tables;
-  unsigned int symbolCount;
-  unsigned int scope; // Keep track of what table you're in
+// Has an array of class tables
+struct programTable {
+  classTable *classes;
   unsigned int classCount; // Keep track of what class you're in
+};
+
+// Has an array of methods
+struct classTable {
+  symbol symbols[MAX_SYMBOLS];
+  methodTable *methods;
+  unsigned int symbolCount;
   unsigned int methodCount; // Keep track of what method you're in
 };
 
+// Has an array of symbols
+struct methodTable {
+  symbol symbols[MAX_SYMBOLS];
+  unsigned int symbolCount;
+};
 
 void initTable();
 void insertSymbol( symbol s ); // Insert takes a symbol and inserts it into the table
-void insertTable(); // Insert a table into an existing table
 int findSymbol( char *name );
 void closeTable();
+void changeScope( unsigned int newScope );
 
 #endif
