@@ -7,7 +7,7 @@
 #include "parser.h"
 
 // Function Prototypes
-void error(char *msg, SyntaxErrors e, ParserInfo *pi);
+void error(char *msg, SyntaxErrors e, ParserInfo *pi, Token t);
 ParserInfo newParserInfo();
 ParserInfo classDecl();
 ParserInfo memberDecl();
@@ -61,25 +61,26 @@ ParserInfo Parse () {
 
 ParserInfo classDecl() {
 	ParserInfo pi = newParserInfo();
+	Token t;
 
 	// Expect class keyword
 	t = GetNextToken();
 	if ( !strcmp(t.lx, "class") && t.tp == RESWORD )
 		; // Be happy :) 
 	else {
-		error("keyword class expected", classExpected);
-		return;
+		error("keyword class expected", classExpected, &pi, t);
+		return pi;
 	}
 
 	// Expect class id 
-	expId();
+	pi = expId();
 	if (pi.er)
-		return;
+		return pi;
 
 	// Expect Open brace
 	expOBrace();
 	if (pi.er)
-		return;
+		return pi;
 
 	// Expect 0 or more member declarations
 	t = PeekNextToken();
@@ -87,58 +88,59 @@ ParserInfo classDecl() {
 			!strcmp(t.lx, "constructor") || !strcmp(t.lx, "function") || 
 			!strcmp(t.lx, "method") ) {
 						
-		memberDecl();
+		pi = memberDecl();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
 	
 	// Expect closing brace
-	expCBrace();
-	if (pi.er)
-		return;
+	pi = expCBrace();
+	return pi;
 }
 
 
 ParserInfo memberDecl() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = PeekNextToken();
 	// Either a classVar Declaration or subroutine declaration
 	if (!strcmp(t.lx, "static") || !strcmp(t.lx, "field"))
-		classVarDecl();
+		pi = classVarDecl();
 	else if (!strcmp(t.lx, "constructor") || !strcmp(t.lx, "function") || !strcmp(t.lx, "method")) 
-		subroutineDecl();
+		pi = subroutineDecl();
 	else  {
 		error("class member declaration must begin with static, field, constructor, function or method",
-				      memberDeclarErr);
-		return;
+			   memberDeclarErr, &pi, t);
 	}
 
-	if (pi.er)
-		return;
+	return pi;
 }
 
 
 ParserInfo classVarDecl() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, "static") || !strcmp(t.lx, "field"))
 		; // Oh yeah let's flipping go
 	else {
 		error("class member declaration must begin with static, field, constructor, function or method",
-				      memberDeclarErr);
-		return;
+			   memberDeclarErr, &pi, t);
+		return pi;
 	}
 
-	type();	
+	pi = type();	
 	if (pi.er)
-		return;
+		return pi;
 
 	// Expect an identifier
-	expId();
+	pi = expId();
 	if (pi.er)
-		return;
+		return pi;
 
 	// 0 or more ", identifier"
 	t = PeekNextToken();
@@ -146,32 +148,37 @@ ParserInfo classVarDecl() {
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken(); // Consume the token
 
-		expId();
+		pi = expId();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
 
 	// Expect semi colon
-	expSColon();
-	if (pi.er)
-		return;
+	pi = expSColon();
+	return pi;
 }
 
-void type() {
+ParserInfo type() {
+	ParserInfo pi = newParserInfo();
+	Token t;
 	t = GetNextToken();
 	
 	if ((!strcmp(t.lx, "int")     || !strcmp(t.lx, "char") ||
 		 !strcmp(t.lx, "boolean") || t.tp == ID))
 		;  // Big time!
 	else
-		error("a type must be int, char, boolean or identifier", illegalType);
+		error("a type must be int, char, boolean or identifier", illegalType, &pi, t);
+
+	return pi;
 }
 
 
-void subroutineDecl() {
+ParserInfo subroutineDecl() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	// Expect constructor, function or method
 	if ((t.tp == RESWORD) &&
@@ -181,8 +188,8 @@ void subroutineDecl() {
 		;  // We groovin' 
 	else {
 		error("subroutine declaration must begin with constructor, function or method",
-			   subroutineDeclarErr);
-		return;
+			   subroutineDeclarErr, &pi, t);
+		return pi;
 	}
 		
 	t = GetNextToken();
@@ -191,183 +198,191 @@ void subroutineDecl() {
 		!strcmp(t.lx, "char") || !strcmp(t.lx, "boolean") || t.tp == ID)  // If the lexeme is "void" or we have a type
 		;  // We mega chillin
 	else {
-		error("expected void or type", syntaxError);
-		return;
+		error("expected void or type", syntaxError, &pi, t);
+		return pi;
 	}
 
 
-	expId();
+	pi = expId();
 	if (pi.er)
-		return;
+		return pi;
 
-	expOParen();
+	pi = expOParen();
 	if (pi.er)
-		return;
+		return pi;
 
-	paramList();
+	pi = paramList();
 	if (pi.er)
-		return;
+		return pi;
 
-	expCParen();
+	pi = expCParen();
 	if (pi.er)
-		return;
+		return pi;
 
-	subroutineBody();  // We want that subroutine body
-	if (pi.er)
-		return;
+	pi = subroutineBody();  // We want that subroutine body
+	return pi;
 }
 
 
-void paramList() {
+ParserInfo paramList() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	// either nothing || 1 or more type id(,)
 	t = PeekNextToken();
 	// Check no params
 	if ( strcmp(t.lx, "int") && strcmp(t.lx, "char") && 
 		 strcmp(t.lx, "boolean") && t.tp != ID )
-		return;
+		return pi;
 
-	type();
+	pi = type();
 	if (pi.er)
-		return;
+		return pi;
 
-	expId();
+	pi = expId();
 	if (pi.er)
-		return;
+		return pi;
 	
 	t = PeekNextToken();	
 	// Until you hit a close parenthesis
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken();
 
-		type();
+		pi = type();
 		if (pi.er)
-			return;
+			return pi;
 
-		expId();
+		pi = expId();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
+
+	return pi;
 }
 
 
-void subroutineBody() {
+ParserInfo subroutineBody() {
 	ParserInfo pi = newParserInfo();
-	expOBrace();
+	Token t;
+
+	pi = expOBrace();
 	if (pi.er)
-		return;
+		return pi;
 	
 	// 0 or more statement
 	t = PeekNextToken();
 	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let") || !strcmp(t.lx, "if")  ||
 		   !strcmp(t.lx, "while") || !strcmp(t.lx, "do")  || !strcmp(t.lx, "return")) {
 
-		statement();
+		pi = statement();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
 	
-	expCBrace();
-	if (pi.er)
-		return;
+	pi = expCBrace();
+	return pi;
 }
 
 
-void statement() {
+ParserInfo statement() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = PeekNextToken();
 	if (!strcmp(t.lx, "var"))
-		varDeclarStmt();
+		pi = varDeclarStmt();
 	else if (!strcmp(t.lx, "let"))
-		letStmt();
+		pi = letStmt();
 	else if (!strcmp(t.lx, "if"))
-		ifStmt();
+		pi = ifStmt();
 	else if (!strcmp(t.lx, "while"))
-		whileStmt();
+		pi = whileStmt();
 	else if (!strcmp(t.lx, "do"))
-		doStmt();
+		pi = doStmt();
 	else if (!strcmp(t.lx, "return"))
-		returnStmt();
-	else {
-		error( "Expected statement", syntaxError );
-		return;
-	}
+		pi = returnStmt();
+	else 
+		error( "Expected statement", syntaxError, &pi, t);
+
+	return pi;
 }
 
 
-void varDeclarStmt() {
+ParserInfo varDeclarStmt() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, "var"))
 		;  // Look on down from the bridggeeee
 	else {
-		error("var keyword expected", syntaxError);
-		return;
+		error("var keyword expected", syntaxError, &pi, t);
+		return pi;
 	}
 
-	type();
+	pi = type();
 	if (pi.er)
-		return;
+		return pi;
 
-	expId();
+	pi = expId();
 	if (pi.er)
-		return;
+		return pi;
 
 	// { , id }
 	t = PeekNextToken();
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken(); // consume token
 
-		expId();
+		pi = expId();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
 
 	
-	expSColon();
-	if (pi.er)
-		return;
+	pi = expSColon();
+	return pi;
 }
 
 
-void letStmt() {
+ParserInfo letStmt() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	// Let keyword
 	t = GetNextToken();
 	if (!strcmp(t.lx, "let"))
 		;  // We're just obvious
 	else {
-		error("let keyword expected", syntaxError);
-		return;
+		error("let keyword expected", syntaxError, &pi, t);
+		return pi;
 	}
 
-	expId();
-	// Check for errors
+	pi = expId();
 	if (pi.er)
-		return;
+		return pi;
 
 	// 0 Or 1 [ expression ]
 	t = PeekNextToken();
 	if (!strcmp(t.lx, "[")) {
 		GetNextToken(); // consume the token
 
-		expression();
+		pi = expression();
 		if (pi.er)
-			return;
+			return pi;
 
 		// Closing ]
 		t = GetNextToken();
 		if (!strcmp(t.lx, "]"))
 			;  // :::::DDDDDDD
 		else {
-			error("] expected", closeBracketExpected);
-			return;
+			error("] expected", closeBracketExpected, &pi, t);
+			return pi;
 		}
 	}
 
@@ -375,181 +390,189 @@ void letStmt() {
 	if (!strcmp(t.lx, "="))
 		;  // Yeah that's calm
 	else {
-		error("= expected", equalExpected);
-		return;
+		error("= expected", equalExpected, &pi, t);
+		return pi;
 	}
 
-	expression();
+	pi = expression();
 	if (pi.er)
-		return;
+		return pi;
 
-	expSColon();
-	if (pi.er)
-		return;
+	pi = expSColon();
+	return pi;
 }
 
 
-void ifStmt() {
+ParserInfo ifStmt() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, "if"))
 		;  // Think for yourself. figure it out yourself
 	else {
-		error("if keyword expected", syntaxError);
-		return;
+		error("if keyword expected", syntaxError, &pi, t);
+		return pi;
 	}
 
-	expOParen();
+	pi = expOParen();
 	if (pi.er)
-		return;
+		return pi;
 
-	expression();
+	pi = expression();
 	if (pi.er)
-		return;
+		return pi;
 
-	expCParen();
+	pi = expCParen();
 	if (pi.er)
-		return;
+		return pi;
 
-	expOBrace();
+	pi = expOBrace();
 	if (pi.er)
-		return;
+		return pi;
 
 	// Zero or more statements
 	t = PeekNextToken();
 	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
 		   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
 
-		statement();
+		pi = statement();
 		if (pi.er)
-			return;
+			return pi;
 		 
 		t = PeekNextToken();
 	}
 
-	expCBrace();
+	pi = expCBrace();
 	if (pi.er)
-		return;
+		return pi;
 
 	t = PeekNextToken();
 	if (!strcmp(t.lx, "else")) {
 		// Consume the token
 		GetNextToken();
 
-		expOBrace();
+		pi = expOBrace();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 		while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let")    || !strcmp(t.lx, "if")  ||
 			   !strcmp(t.lx, "while") ||  !strcmp(t.lx, "do")    || !strcmp(t.lx, "return")) {
-			statement();
+			pi = statement();
 			if (pi.er)
-				return;
+				return pi;
 
 			t = PeekNextToken();
 		}
 
-		expCBrace();
+		pi = expCBrace();
 		if (pi.er)
-			return;
+			return pi;
 	}
+
+	return pi;
 }
 
 
-void whileStmt() {
+ParserInfo whileStmt() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, "while"))
 		;  // Big time mega chilling
 	else {
-		error("while keyword expected", syntaxError);
-		return;
+		error("while keyword expected", syntaxError, &pi, t);
+		return pi;
 	}
 
-	expOParen();
+	pi = expOParen();
 	if (pi.er)
-		return;
+		return pi;
 
-	expression();
+	pi = expression();
 	if (pi.er)
-		return;
+		return pi;
 
-	expCParen();
+	pi = expCParen();
 	if (pi.er)
-		return;
+		return pi;
 
-	expOBrace();
+	pi = expOBrace();
 	if (pi.er)
-		return;
+		return pi;
 
 	t = PeekNextToken();
 	while (!strcmp(t.lx, "var")   || !strcmp(t.lx, "let") || !strcmp(t.lx, "if")  ||
 		   !strcmp(t.lx, "while") || !strcmp(t.lx, "do")  || !strcmp(t.lx, "return")) {
 
-		statement();
+		pi = statement();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
 
-	expCBrace();
-	if (pi.er)
-		return;
+	pi = expCBrace();
+	return pi;
 }
 
 
-void doStmt() {
+ParserInfo doStmt() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, "do"))
 		;  // Love you
 	else {
-		error("expected do keyword", syntaxError);
-		return;
+		error("expected do keyword", syntaxError, &pi, t);
+		return pi;
 	}
 
-	subroutineCall();
+	pi = subroutineCall();
 	if (pi.er)
-		return;
+		return pi;
 
-	expSColon();
-	if (pi.er)
-		return;
+	pi = expSColon();
+	return pi;
 }
 
 
-void subroutineCall() {
+ParserInfo subroutineCall() {
 	ParserInfo pi = newParserInfo();
-	expId();
+	Token t;
+
+	pi = expId();
 	if (pi.er)
-		return;
+		return pi;
 
 	t = PeekNextToken();
 	if (!strcmp(t.lx, ".")) {
 		GetNextToken(); // Consume token
-		expId();
+		pi = expId();
 		if (pi.er)
-			return;
+			return pi;
 	}
 
-	expOParen();
+	pi = expOParen();
 	if (pi.er)
-		return;
+		return pi;
 
-	expressionList();
+	pi = expressionList();
 	if (pi.er)
-		return;
+		return pi;
 
-	expCParen();
-	if (pi.er)
-		return;
+	pi = expCParen();
+	return pi;
 }
 
 
-void expressionList() {
+ParserInfo expressionList() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	// CAN ALSO BE NOTHING
 	// Expression can start with - | ~ | int | id | ( | string | true | false | null | this
 	// If it doesn't start with any of these then return 
@@ -559,33 +582,37 @@ void expressionList() {
 		 strcmp(t.lx, "false") && strcmp(t.lx, "null") &&
 		 strcmp(t.lx, "this")  && t.tp != INT && 
 		 t.tp != ID && t.tp != STRING )
-		return;
+		return pi;
 
-	expression();
+	pi = expression();
 	if (pi.er)
-		return;
+		return pi;
 
 	t = PeekNextToken();
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken();
 
-		expression();
+		pi = expression();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
+
+	return pi;
 }
 
 
-void returnStmt() {
+ParserInfo returnStmt() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, "return"))
 		;  // We good yo
 	else {
-		error( "'return' keyword expected", syntaxError );
-		return;
+		error( "'return' keyword expected", syntaxError, &pi, t );
+		return pi;
 	}
 
 	// 0 or 1 expressions
@@ -594,122 +621,141 @@ void returnStmt() {
 		 !strcmp(t.lx, "(")     || !strcmp(t.lx, "true") ||
 		 !strcmp(t.lx, "false") || !strcmp(t.lx, "null") ||
 		 !strcmp(t.lx, "this")  || t.tp == INT || t.tp == ID || t.tp == STRING ) {
-		expression();
+		pi = expression();
 		if (pi.er)
-			return;
+			return pi;
 	}
 
-	expSColon();
+	pi = expSColon();
 	if (pi.er)
-		return;
+		return pi;
 
 	// Check for unreachable code
 	t = PeekNextToken();
 	
-	
+	return pi;
 }
 
 
-void expression() {
+ParserInfo expression() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	// Relational expression
-	relationalExpression();
+	pi = relationalExpression();
 	if (pi.er)
-		return;
+		return pi;
 
 	// 0 or more & or | followed by a relationalExpression()
 	t = PeekNextToken();
 	while ( !strcmp(t.lx, "&") || !strcmp(t.lx, "|") ) {
 		GetNextToken(); // Consume the token
-		relationalExpression();
+		pi = relationalExpression();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
+
+	return pi;
 }
 
 
-void relationalExpression() {
+ParserInfo relationalExpression() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	// Arithmetic expression
-	arithmeticExpression();
+	pi = arithmeticExpression();
 	if (pi.er)
-		return;
+		return pi;
 
 	// 0 or more = or > or < followed by a arithmeticExpression()
 	t = PeekNextToken();
 	while ( !strcmp(t.lx, "=") || !strcmp(t.lx, ">") || !strcmp(t.lx, "<") ) {
 		GetNextToken(); // consume the token
 	
-		arithmeticExpression();
+		pi = arithmeticExpression();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
+
+	return pi;
 }
 
 
-void arithmeticExpression() {
+ParserInfo arithmeticExpression() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	// Term
-	term();
+	pi = term();
 	if (pi.er)
-		return;
+		return pi;
 
 	// zero or more + or - followed by an arithmeticExpression()
 	t = PeekNextToken();
 	while ( !strcmp(t.lx, "-") || !strcmp(t.lx, "+") ) {
 		GetNextToken(); // Consume token
-		term();
+		pi = term();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
+
+	return pi;
 }
 
 
-void term() {
+ParserInfo term() {
 	ParserInfo pi = newParserInfo();
-	factor();
+	Token t;
+
+	pi = factor();
 	if (pi.er)
-		return;
+		return pi;
 
 	// 0 or more * or / and then a factor
 	t = PeekNextToken();
 	while ( !strcmp(t.lx, "*") || !strcmp(t.lx, "/") ) {
 		GetNextToken();
 
-		factor();
+		pi = factor();
 		if (pi.er)
-			return;
+			return pi;
 
 		t = PeekNextToken();
 	}
+
+	return pi;
 }
 
 
-void factor() {
+ParserInfo factor() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	// Exp either - or ~ or nothing.
 	t = PeekNextToken();
 	if ( !strcmp(t.lx, "-") || !strcmp(t.lx, "~") )
 		GetNextToken(); // Consume the token
 
 	// Exp operand
-	operand();
-	if (pi.er)
-		return;
+	pi = operand();
+	return pi;
 }
 
 
-void operand() {
+ParserInfo operand() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (t.tp == INT)
-		return; // Integer constant
+		return pi; // Integer constant
 
 	// ID [ .ID ] [ [ expression ] | ( expressionList ) ]
 	if (t.tp == ID) {
@@ -720,8 +766,8 @@ void operand() {
 			if (t.tp == ID)
 				; // Chillin'
 			else {
-				error("identifier expected", idExpected);
-				return;
+				error("identifier expected", idExpected, &pi, t);
+				return pi;
 			}
 		}
 
@@ -729,117 +775,140 @@ void operand() {
 		if (!strcmp(t.lx, "[")) {
 			GetNextToken(); // Consume token
 							
-			expression();
+			pi = expression();
 			if (pi.er)
-				return;
+				return pi;
 			
 			t = GetNextToken();
 			if (!strcmp(t.lx, "]"))
 				; // Jazzy
 			else {
-				error("] expected", closeBracketExpected);
-				return;
+				error("] expected", closeBracketExpected, &pi, t);
+				return pi;
 			}
 		} else if (!strcmp(t.lx, "(")) {
 			GetNextToken();
 
-			expressionList();
+			pi = expressionList();
 			if (pi.er)
-				return;
+				return pi;
 
-			expCParen();
+			pi = expCParen();
 			if (pi.er)
-				return;
+				return pi;
 		}
-		return;
+		return pi;
 	}
 
 	if (!strcmp(t.lx, "(")) {
-		expression();
+		pi = expression();
 		if (pi.er)
-			return;
+			return pi;
 
-		expCParen();
-		return;
+		pi = expCParen();
+		return pi;
 	}
 
 	if (t.tp == STRING)
-		return;
+		return pi;
 
 	if (t.tp != RESWORD) {
-		error("expected operand", syntaxError);
-		return;
+		error("expected operand", syntaxError, &pi, t);
+		return pi;
 	}
 
 	if ( !strcmp(t.lx, "true") || !strcmp(t.lx, "false") ||
 		 !strcmp(t.lx, "null") || !strcmp(t.lx, "this") )
-		return;
+		;
+	
+	return pi;
 }
 
 
-void expId() {
+ParserInfo expId() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
+
 	t = GetNextToken();
 	if (t.tp == ID)
 		;  // Ain't that funkin' kind of hard on youuuuuu
 	else
-		error("identifier expected", idExpected);
+		error("identifier expected", idExpected, &pi, t);
+
+	return pi;
 }
 
-void expOParen() {
+ParserInfo expOParen() {
+	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, "("))
 		;  //  Whoaaaaaaa whoaaaaaaa whoaaaaa
 	else
-		error("( expected", openParenExpected);
+		error("( expected", openParenExpected, &pi, t);
+	return pi;
 }
 
-void expCParen() {
+ParserInfo expCParen() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, ")"))
 		;  // It's deep init it's deep mate
 	else
-		error(") expected", closeParenExpected);
+		error(") expected", closeParenExpected, &pi, t);
+	return pi;
 }
 
-void expOBrace() {
+ParserInfo expOBrace() {
+	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, "{"))
 		;  // Isimii yata motche
 	else
-		error("{ expected", openBraceExpected);
+		error("{ expected", openBraceExpected, &pi, t);
+	return pi;
 }
 
-void expCBrace() {
+ParserInfo expCBrace() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, "}"))
 		;  // Isimii yata motche
 	else
-		error("} expected", closeBraceExpected);
+		error("} expected", closeBraceExpected, &pi, t);
+	return pi;
 }
 
-void expSColon() {
+ParserInfo expSColon() {
 	ParserInfo pi = newParserInfo();
+	Token t;
+
 	t = GetNextToken();
 	if (!strcmp(t.lx, ";"))
 		;  // Isimii yata motche
 	else
-		error("; expected", semicolonExpected);
+		error("; expected", semicolonExpected, &pi, t);
+	return pi;
 }
 
 
-void error(char *msg, SyntaxErrors e, ParserInfo *pi) {
-	pi.tk = t;
-	pi.er = e;
+void error(char *msg, SyntaxErrors e, ParserInfo *pi, Token t) {
+	pi->tk = t;
+	pi->er = e;
 	if (t.tp == ERR) {
 	 	printf("%s at line %i\n", t.lx, t.ln);
-		pi.er = lexerErr;
+		pi->er = lexerErr;
 	}
 	else 
 		printf("Error, line %i, close to %s, %s.\n", t.ln, t.lx, msg);
-	// exit(1);
 }
 
 
