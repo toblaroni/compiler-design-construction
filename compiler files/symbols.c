@@ -40,7 +40,7 @@ static methodTable *getCurrentMethod();
 static void insertTable();
 
 // Initialise the program table.
-void initSymTable() {
+void initTable() {
 	scope = PROG_SCOPE;
 	
 	// Set the tables to null becuase there's currently no tables
@@ -51,6 +51,10 @@ void initSymTable() {
 		printf("COMPILER ERROR: Failed to allocate tables to program symbol table.\n");
 		exit(-1);
 	}
+
+	// Set all the symbol attributes to null
+	for (int i = 0; i < MAX_SYMBOLS; ++i)
+		progTable.symbols[i].attr = NULL;
 
 	// Set the symbolCount and tableCount to 0
 	progTable.classCount  = 0;
@@ -250,9 +254,8 @@ void insertTable() {
 	currentMethod->symbolCount = 0;
 
 	// Set all the symbol attributes to null
-	for ( int i = 0; i < MAX_SYMBOLS; ++i ) {
+	for ( int i = 0; i < MAX_SYMBOLS; ++i )
 		currentMethod->symbols[i].attr = NULL;
-	}
 }
 
 
@@ -269,7 +272,3 @@ static methodTable *getCurrentMethod() {
 	return (currentClass->methods + currentClass->methodCount-1);
 }
 
-int main(void) {
-	printf("What's up\n");
-	return 0;
-}

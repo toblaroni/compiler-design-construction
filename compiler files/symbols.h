@@ -9,7 +9,7 @@
 #define CLASS_SCOPE  1
 #define METHOD_SCOPE 2
 
-const int MAX_SYMBOLS = 256; // Maxumimum symbols in a table
+ #define MAX_SYMBOLS 256 // Maxumimum symbols in a table
 
 // define your own types and function prototypes for the symbol table(s) module below
 typedef enum { CLASS, VAR, METHOD, BAD_TYPE } Type;

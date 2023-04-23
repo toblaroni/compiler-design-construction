@@ -2,58 +2,65 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "symbols.h"
 #include "lexer.h"
 #include "parser.h"
 
-// Global token and parserinfo variable
-Token t;
-ParserInfo pi;
-
 // Function Prototypes
-void error(char *msg, SyntaxErrors e);
-void classDecl();
-void memberDecl();
-void classVarDecl();
-void type();
-void subroutineDecl();
-void paramList();
-void subroutineBody();
-void statement();
-void varDeclarStmt();
-void letStmt();
-void ifStmt();
-void whileStmt();
-void doStmt();
-void subroutineCall();
-void expressionList();
-void returnStmt();
-void expression();
-void relationalExpression();
-void arithmeticExpression();
-void term();
-void factor();
-void operand();
-void expId();		// For when you expect an identifier
-void expOParen();	// For when you expect (
-void expCParen();	// For when you expect )
-void expOBrace();	// For when you expect {
-void expCBrace();	// For when you expect }
-void expSColon();	// For when you expect ;
+void error(char *msg, SyntaxErrors e, ParserInfo *pi);
+ParserInfo newParserInfo();
+ParserInfo classDecl();
+ParserInfo memberDecl();
+ParserInfo classVarDecl();
+ParserInfo type();
+ParserInfo subroutineDecl();
+ParserInfo paramList();
+ParserInfo subroutineBody();
+ParserInfo statement();
+ParserInfo varDeclarStmt();
+ParserInfo letStmt();
+ParserInfo ifStmt();
+ParserInfo whileStmt();
+ParserInfo doStmt();
+ParserInfo subroutineCall();
+ParserInfo expressionList();
+ParserInfo returnStmt();
+ParserInfo expression();
+ParserInfo relationalExpression();
+ParserInfo arithmeticExpression();
+ParserInfo term();
+ParserInfo factor();
+ParserInfo operand();
+ParserInfo expId();		// For when you expect an identifier
+ParserInfo expOParen();	// For when you expect (
+ParserInfo expCParen();	// For when you expect )
+ParserInfo expOBrace();	// For when you expect {
+ParserInfo expCBrace();	// For when you expect }
+ParserInfo expSColon();	// For when you expect ;
 
+// Create a default ParserInfo struct
+ParserInfo newParserInfo() {
+	ParserInfo pi;
+	pi.er = none;
+	return pi;
+}
 
 int InitParser (char* file_name) {
-	return InitLexer(file_name);
+	int openFile = InitLexer(file_name);
+	if (!openFile)
+		return openFile;
+	initTable();
+	return openFile;
 }
 
 
 ParserInfo Parse () {
-	pi.er = none;
-	classDecl();
-	return pi;
+	return classDecl();
 }
 
 
-void classDecl() {
+ParserInfo classDecl() {
+	ParserInfo pi = newParserInfo();
 
 	// Expect class keyword
 	t = GetNextToken();
@@ -94,7 +101,8 @@ void classDecl() {
 }
 
 
-void memberDecl() {
+ParserInfo memberDecl() {
+	ParserInfo pi = newParserInfo();
 	t = PeekNextToken();
 	// Either a classVar Declaration or subroutine declaration
 	if (!strcmp(t.lx, "static") || !strcmp(t.lx, "field"))
@@ -112,7 +120,8 @@ void memberDecl() {
 }
 
 
-void classVarDecl() {
+ParserInfo classVarDecl() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (!strcmp(t.lx, "static") || !strcmp(t.lx, "field"))
 		; // Oh yeah let's flipping go
@@ -162,6 +171,7 @@ void type() {
 
 
 void subroutineDecl() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	// Expect constructor, function or method
 	if ((t.tp == RESWORD) &&
@@ -209,6 +219,7 @@ void subroutineDecl() {
 
 
 void paramList() {
+	ParserInfo pi = newParserInfo();
 	// either nothing || 1 or more type id(,)
 	t = PeekNextToken();
 	// Check no params
@@ -243,6 +254,7 @@ void paramList() {
 
 
 void subroutineBody() {
+	ParserInfo pi = newParserInfo();
 	expOBrace();
 	if (pi.er)
 		return;
@@ -266,6 +278,7 @@ void subroutineBody() {
 
 
 void statement() {
+	ParserInfo pi = newParserInfo();
 	t = PeekNextToken();
 	if (!strcmp(t.lx, "var"))
 		varDeclarStmt();
@@ -287,6 +300,7 @@ void statement() {
 
 
 void varDeclarStmt() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (!strcmp(t.lx, "var"))
 		;  // Look on down from the bridggeeee
@@ -323,6 +337,7 @@ void varDeclarStmt() {
 
 
 void letStmt() {
+	ParserInfo pi = newParserInfo();
 	// Let keyword
 	t = GetNextToken();
 	if (!strcmp(t.lx, "let"))
@@ -375,6 +390,7 @@ void letStmt() {
 
 
 void ifStmt() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (!strcmp(t.lx, "if"))
 		;  // Think for yourself. figure it out yourself
@@ -442,6 +458,7 @@ void ifStmt() {
 
 
 void whileStmt() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (!strcmp(t.lx, "while"))
 		;  // Big time mega chilling
@@ -484,6 +501,7 @@ void whileStmt() {
 
 
 void doStmt() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (!strcmp(t.lx, "do"))
 		;  // Love you
@@ -503,6 +521,7 @@ void doStmt() {
 
 
 void subroutineCall() {
+	ParserInfo pi = newParserInfo();
 	expId();
 	if (pi.er)
 		return;
@@ -530,6 +549,7 @@ void subroutineCall() {
 
 
 void expressionList() {
+	ParserInfo pi = newParserInfo();
 	// CAN ALSO BE NOTHING
 	// Expression can start with - | ~ | int | id | ( | string | true | false | null | this
 	// If it doesn't start with any of these then return 
@@ -559,6 +579,7 @@ void expressionList() {
 
 
 void returnStmt() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (!strcmp(t.lx, "return"))
 		;  // We good yo
@@ -581,10 +602,16 @@ void returnStmt() {
 	expSColon();
 	if (pi.er)
 		return;
+
+	// Check for unreachable code
+	t = PeekNextToken();
+	
+	
 }
 
 
 void expression() {
+	ParserInfo pi = newParserInfo();
 	// Relational expression
 	relationalExpression();
 	if (pi.er)
@@ -604,6 +631,7 @@ void expression() {
 
 
 void relationalExpression() {
+	ParserInfo pi = newParserInfo();
 	// Arithmetic expression
 	arithmeticExpression();
 	if (pi.er)
@@ -624,6 +652,7 @@ void relationalExpression() {
 
 
 void arithmeticExpression() {
+	ParserInfo pi = newParserInfo();
 	// Term
 	term();
 	if (pi.er)
@@ -643,6 +672,7 @@ void arithmeticExpression() {
 
 
 void term() {
+	ParserInfo pi = newParserInfo();
 	factor();
 	if (pi.er)
 		return;
@@ -662,6 +692,7 @@ void term() {
 
 
 void factor() {
+	ParserInfo pi = newParserInfo();
 	// Exp either - or ~ or nothing.
 	t = PeekNextToken();
 	if ( !strcmp(t.lx, "-") || !strcmp(t.lx, "~") )
@@ -675,6 +706,7 @@ void factor() {
 
 
 void operand() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (t.tp == INT)
 		return; // Integer constant
@@ -746,6 +778,7 @@ void operand() {
 
 
 void expId() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (t.tp == ID)
 		;  // Ain't that funkin' kind of hard on youuuuuu
@@ -762,6 +795,7 @@ void expOParen() {
 }
 
 void expCParen() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (!strcmp(t.lx, ")"))
 		;  // It's deep init it's deep mate
@@ -778,6 +812,7 @@ void expOBrace() {
 }
 
 void expCBrace() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (!strcmp(t.lx, "}"))
 		;  // Isimii yata motche
@@ -786,6 +821,7 @@ void expCBrace() {
 }
 
 void expSColon() {
+	ParserInfo pi = newParserInfo();
 	t = GetNextToken();
 	if (!strcmp(t.lx, ";"))
 		;  // Isimii yata motche
@@ -794,7 +830,7 @@ void expSColon() {
 }
 
 
-void error(char *msg, SyntaxErrors e) {
+void error(char *msg, SyntaxErrors e, ParserInfo *pi) {
 	pi.tk = t;
 	pi.er = e;
 	if (t.tp == ERR) {
@@ -808,19 +844,23 @@ void error(char *msg, SyntaxErrors e) {
 
 
 int StopParser () {
+	closeTable();
 	return StopLexer();
 }
 
 
 #ifndef TEST_PARSER
 int main (void) {
-	InitParser("closeParenExpected.jack");	
+	if (!InitParser("Math.jack"))
+		exit(-1);
 
 	if (Parse().er) {
+		StopParser();
 		exit(1);
 	};
 	
 	printf("Successfully parsed source file\n");
+	StopParser();
 	return 0;
 }
 #endif
