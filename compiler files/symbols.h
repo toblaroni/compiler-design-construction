@@ -25,6 +25,7 @@ typedef struct {
   Kind arrayType;
   VarType varType;
   unsigned int paramCount; // Number of parameters
+  short isInit; // Is it initialised
 } attributes;
 
 

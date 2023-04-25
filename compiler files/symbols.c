@@ -105,6 +105,7 @@ int findSymbol( char *name ) {
 
 
 void closeTable() {
+	// ALSO NEED TO FREE SYMBOL NAMES IF ALLOCATED
 	// ALso have to loop through all symbols freeing the attributes
 	for (int i = 0; i < progTable.classCount; ++i) {
 		classTable *cClass = progTable.classes + i;
@@ -260,14 +261,14 @@ void insertTable() {
 
 
 static classTable *getCurrentClass() {
-	if ( progTable.classCount == 0)
+	if ( progTable.classCount == 0 || scope == PROG_SCOPE)
 		return NULL;
 	return (progTable.classes + (progTable.classCount-1));
 }
 
 static methodTable *getCurrentMethod() {
 	classTable *currentClass = getCurrentClass();
-	if ( currentClass == NULL || currentClass->methodCount == 0 )
+	if ( currentClass == NULL || currentClass->methodCount == 0 || scope == CLASS_SCOPE )
 		return NULL;
 	return (currentClass->methods + currentClass->methodCount-1);
 }

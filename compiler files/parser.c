@@ -31,7 +31,7 @@ ParserInfo arithmeticExpression();
 ParserInfo term();
 ParserInfo factor();
 ParserInfo operand();
-ParserInfo expId();		// For when you expect an identifier
+ParserInfo expId( symbol *sym, Token *tkn ); // For when you expect an identifier.
 ParserInfo expOParen();	// For when you expect (
 ParserInfo expCParen();	// For when you expect )
 ParserInfo expOBrace();	// For when you expect {
@@ -46,11 +46,7 @@ ParserInfo newParserInfo() {
 }
 
 int InitParser (char* file_name) {
-	int openFile = InitLexer(file_name);
-	if (!openFile)
-		return openFile;
-	initTable();
-	return openFile;
+	return InitLexer(file_name);
 }
 
 
@@ -73,12 +69,21 @@ ParserInfo classDecl() {
 	}
 
 	// Expect class id 
-	pi = expId();
+	// We want to create a new symbol with the of the class
+	// We also want to see if the class name already exists
+	symbol s;
+	s.dataType = CLASS;
+	pi = expId( &s, &t );
 	if (pi.er)
 		return pi;
+	// Check the name hasn't already been taken
+	if ( findSymbol(s.name) != -1 ) {
+		error("redeclaration of identifier in the same scope", redecIdentifier, &pi, t);
+		return pi;
+	}
 
 	// Expect Open brace
-	expOBrace();
+	pi = expOBrace();
 	if (pi.er)
 		return pi;
 
@@ -138,7 +143,8 @@ ParserInfo classVarDecl() {
 		return pi;
 
 	// Expect an identifier
-	pi = expId();
+	symbol s;
+	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
 
@@ -148,7 +154,8 @@ ParserInfo classVarDecl() {
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken(); // Consume the token
 
-		pi = expId();
+		symbol s;
+		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
 
@@ -203,7 +210,8 @@ ParserInfo subroutineDecl() {
 	}
 
 
-	pi = expId();
+	symbol s;
+	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
 
@@ -239,7 +247,8 @@ ParserInfo paramList() {
 	if (pi.er)
 		return pi;
 
-	pi = expId();
+	symbol s;
+	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
 	
@@ -252,7 +261,8 @@ ParserInfo paramList() {
 		if (pi.er)
 			return pi;
 
-		pi = expId();
+		symbol s;
+		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
 
@@ -328,7 +338,8 @@ ParserInfo varDeclarStmt() {
 	if (pi.er)
 		return pi;
 
-	pi = expId();
+	symbol s;
+	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
 
@@ -337,7 +348,8 @@ ParserInfo varDeclarStmt() {
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken(); // consume token
 
-		pi = expId();
+		symbol s;
+		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
 
@@ -363,7 +375,8 @@ ParserInfo letStmt() {
 		return pi;
 	}
 
-	pi = expId();
+	symbol s;
+	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
 
@@ -544,14 +557,17 @@ ParserInfo subroutineCall() {
 	ParserInfo pi = newParserInfo();
 	Token t;
 
-	pi = expId();
+	symbol s;
+	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
 
 	t = PeekNextToken();
 	if (!strcmp(t.lx, ".")) {
 		GetNextToken(); // Consume token
-		pi = expId();
+
+		symbol s;
+		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
 	}
@@ -632,6 +648,8 @@ ParserInfo returnStmt() {
 
 	// Check for unreachable code
 	t = PeekNextToken();
+	if (strcmp(t.lx, "}"))
+		error("unreachable code", syntaxError, &pi, t);
 	
 	return pi;
 }
@@ -825,14 +843,18 @@ ParserInfo operand() {
 }
 
 
-ParserInfo expId() {
+// takes in a symbol and a token
+ParserInfo expId( symbol *sym, Token *tkn ) {
 	ParserInfo pi = newParserInfo();
 	Token t;
 
-
 	t = GetNextToken();
-	if (t.tp == ID)
-		;  // Ain't that funkin' kind of hard on youuuuuu
+	if (t.tp == ID) {
+		// Copy the lexeme of the identifier to the name of the symbol
+		sym->name = malloc(strlen(t.lx));
+		strcpy(sym->name, t.lx); 
+		*tkn = t;
+	}
 	else
 		error("identifier expected", idExpected, &pi, t);
 
@@ -904,7 +926,6 @@ void error(char *msg, SyntaxErrors e, ParserInfo *pi, Token t) {
 	pi->tk = t;
 	pi->er = e;
 	if (t.tp == ERR) {
-	 	printf("%s at line %i\n", t.lx, t.ln);
 		pi->er = lexerErr;
 	}
 	else 
@@ -913,11 +934,10 @@ void error(char *msg, SyntaxErrors e, ParserInfo *pi, Token t) {
 
 
 int StopParser () {
-	closeTable();
 	return StopLexer();
 }
 
-
+#if 0
 #ifndef TEST_PARSER
 int main (void) {
 	if (!InitParser("Math.jack"))
@@ -932,4 +952,5 @@ int main (void) {
 	StopParser();
 	return 0;
 }
+#endif
 #endif
