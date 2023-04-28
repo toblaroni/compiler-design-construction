@@ -7,12 +7,12 @@
 #include "parser.h"
 
 // Function Prototypes
-void error(char *msg, SyntaxErrors e, ParserInfo *pi, Token t);
+void error(SyntaxErrors e, ParserInfo *pi, Token t);
 ParserInfo newParserInfo();
 ParserInfo classDecl();
 ParserInfo memberDecl();
 ParserInfo classVarDecl();
-ParserInfo type();
+Kind type( ParserInfo *pi );
 ParserInfo subroutineDecl();
 ParserInfo paramList();
 ParserInfo subroutineBody();
@@ -64,7 +64,7 @@ ParserInfo classDecl() {
 	if ( !strcmp(t.lx, "class") && t.tp == RESWORD )
 		; // Be happy :) 
 	else {
-		error("keyword class expected", classExpected, &pi, t);
+		error(classExpected, &pi, t);
 		return pi;
 	}
 
@@ -78,7 +78,7 @@ ParserInfo classDecl() {
 		return pi;
 	// Check the name hasn't already been taken
 	if ( findSymbol(s.name) != -1 ) {
-		error("redeclaration of identifier in the same scope", redecIdentifier, &pi, t);
+		error(redecIdentifier, &pi, t);
 		return pi;
 	}
 
@@ -102,6 +102,11 @@ ParserInfo classDecl() {
 	
 	// Expect closing brace
 	pi = expCBrace();
+	if (pi.er)
+		return pi;
+	
+	// Change the scope of the symbol table back to program scope
+	changeScope(PROG_SCOPE);
 	return pi;
 }
 
@@ -116,10 +121,8 @@ ParserInfo memberDecl() {
 		pi = classVarDecl();
 	else if (!strcmp(t.lx, "constructor") || !strcmp(t.lx, "function") || !strcmp(t.lx, "method")) 
 		pi = subroutineDecl();
-	else  {
-		error("class member declaration must begin with static, field, constructor, function or method",
-			   memberDeclarErr, &pi, t);
-	}
+	else 
+		error(memberDeclarErr, &pi, t);
 
 	return pi;
 }
@@ -128,25 +131,38 @@ ParserInfo memberDecl() {
 ParserInfo classVarDecl() {
 	ParserInfo pi = newParserInfo();
 	Token t;
+	symbol s;
+	s.dataType = VAR;
+
+	// Allocate memory for the variables attributes
+	s.attr = malloc( sizeof(attributes) );
+	s.attr->isInit = NOT_INIT;
 
 	t = GetNextToken();
-	if (!strcmp(t.lx, "static") || !strcmp(t.lx, "field"))
-		; // Oh yeah let's flipping go
+	if (!strcmp(t.lx, "static")) 
+		s.attr->varType = STATIC; // We've got a static variable
+	else if (!strcmp(t.lx, "field")) 
+		s.attr->varType = FIELD; // We've got a field variable
 	else {
-		error("class member declaration must begin with static, field, constructor, function or method",
-			   memberDeclarErr, &pi, t);
+		error(memberDeclarErr, &pi, t);
 		return pi;
 	}
 
-	pi = type();	
+	s.attr->kind = type(&pi);
 	if (pi.er)
 		return pi;
 
 	// Expect an identifier
-	symbol s;
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
+	// Check to see if the type exists already (In the current scope) <- will always be class scope
+	if (findSymbol(t.lx) != -1) {
+		error(redecIdentifier, &pi, t);
+		return pi;
+	}
+	strcpy(s.name, t.lx);
+	insertSymbol(s);
 
 	// 0 or more ", identifier"
 	t = PeekNextToken();
@@ -167,18 +183,20 @@ ParserInfo classVarDecl() {
 	return pi;
 }
 
-ParserInfo type() {
-	ParserInfo pi = newParserInfo();
+Kind type(ParserInfo *pi) {
 	Token t;
 	t = GetNextToken();
-	
-	if ((!strcmp(t.lx, "int")     || !strcmp(t.lx, "char") ||
-		 !strcmp(t.lx, "boolean") || t.tp == ID))
-		;  // Big time!
-	else
-		error("a type must be int, char, boolean or identifier", illegalType, &pi, t);
 
-	return pi;
+	if (!strcmp(t.lx, "int"))
+			return INTEGER;
+	else if (!strcmp(t.lx, "char"))
+			return CHAR;
+	else if (!strcmp(t.lx, "boolean"))
+			return BOOL;
+	else if ( t.tp == ID )
+			return TYPE;
+	else
+		error(illegalType, pi, t);
 }
 
 
@@ -194,8 +212,7 @@ ParserInfo subroutineDecl() {
 		 !strcmp(t.lx, "method")))
 		;  // We groovin' 
 	else {
-		error("subroutine declaration must begin with constructor, function or method",
-			   subroutineDeclarErr, &pi, t);
+		error(subroutineDeclarErr, &pi, t);
 		return pi;
 	}
 		
@@ -205,7 +222,7 @@ ParserInfo subroutineDecl() {
 		!strcmp(t.lx, "char") || !strcmp(t.lx, "boolean") || t.tp == ID)  // If the lexeme is "void" or we have a type
 		;  // We mega chillin
 	else {
-		error("expected void or type", syntaxError, &pi, t);
+		error(syntaxError, &pi, t);
 		return pi;
 	}
 
@@ -316,7 +333,7 @@ ParserInfo statement() {
 	else if (!strcmp(t.lx, "return"))
 		pi = returnStmt();
 	else 
-		error( "Expected statement", syntaxError, &pi, t);
+		error(syntaxError, &pi, t);
 
 	return pi;
 }
@@ -330,7 +347,7 @@ ParserInfo varDeclarStmt() {
 	if (!strcmp(t.lx, "var"))
 		;  // Look on down from the bridggeeee
 	else {
-		error("var keyword expected", syntaxError, &pi, t);
+		error(syntaxError, &pi, t);
 		return pi;
 	}
 
@@ -371,7 +388,7 @@ ParserInfo letStmt() {
 	if (!strcmp(t.lx, "let"))
 		;  // We're just obvious
 	else {
-		error("let keyword expected", syntaxError, &pi, t);
+		error(syntaxError, &pi, t);
 		return pi;
 	}
 
@@ -394,7 +411,7 @@ ParserInfo letStmt() {
 		if (!strcmp(t.lx, "]"))
 			;  // :::::DDDDDDD
 		else {
-			error("] expected", closeBracketExpected, &pi, t);
+			error(closeBracketExpected, &pi, t);
 			return pi;
 		}
 	}
@@ -403,7 +420,7 @@ ParserInfo letStmt() {
 	if (!strcmp(t.lx, "="))
 		;  // Yeah that's calm
 	else {
-		error("= expected", equalExpected, &pi, t);
+		error(equalExpected, &pi, t);
 		return pi;
 	}
 
@@ -424,7 +441,7 @@ ParserInfo ifStmt() {
 	if (!strcmp(t.lx, "if"))
 		;  // Think for yourself. figure it out yourself
 	else {
-		error("if keyword expected", syntaxError, &pi, t);
+		error(syntaxError, &pi, t);
 		return pi;
 	}
 
@@ -496,7 +513,7 @@ ParserInfo whileStmt() {
 	if (!strcmp(t.lx, "while"))
 		;  // Big time mega chilling
 	else {
-		error("while keyword expected", syntaxError, &pi, t);
+		error(syntaxError, &pi, t);
 		return pi;
 	}
 
@@ -540,7 +557,7 @@ ParserInfo doStmt() {
 	if (!strcmp(t.lx, "do"))
 		;  // Love you
 	else {
-		error("expected do keyword", syntaxError, &pi, t);
+		error(syntaxError, &pi, t);
 		return pi;
 	}
 
@@ -627,7 +644,7 @@ ParserInfo returnStmt() {
 	if (!strcmp(t.lx, "return"))
 		;  // We good yo
 	else {
-		error( "'return' keyword expected", syntaxError, &pi, t );
+		error(syntaxError, &pi, t );
 		return pi;
 	}
 
@@ -649,7 +666,7 @@ ParserInfo returnStmt() {
 	// Check for unreachable code
 	t = PeekNextToken();
 	if (strcmp(t.lx, "}"))
-		error("unreachable code", syntaxError, &pi, t);
+		error(syntaxError, &pi, t);
 	
 	return pi;
 }
@@ -784,7 +801,7 @@ ParserInfo operand() {
 			if (t.tp == ID)
 				; // Chillin'
 			else {
-				error("identifier expected", idExpected, &pi, t);
+				error(idExpected, &pi, t);
 				return pi;
 			}
 		}
@@ -801,7 +818,7 @@ ParserInfo operand() {
 			if (!strcmp(t.lx, "]"))
 				; // Jazzy
 			else {
-				error("] expected", closeBracketExpected, &pi, t);
+				error(closeBracketExpected, &pi, t);
 				return pi;
 			}
 		} else if (!strcmp(t.lx, "(")) {
@@ -831,7 +848,7 @@ ParserInfo operand() {
 		return pi;
 
 	if (t.tp != RESWORD) {
-		error("expected operand", syntaxError, &pi, t);
+		error(syntaxError, &pi, t);
 		return pi;
 	}
 
@@ -856,7 +873,7 @@ ParserInfo expId( symbol *sym, Token *tkn ) {
 		*tkn = t;
 	}
 	else
-		error("identifier expected", idExpected, &pi, t);
+		error(idExpected, &pi, t);
 
 	return pi;
 }
@@ -869,7 +886,7 @@ ParserInfo expOParen() {
 	if (!strcmp(t.lx, "("))
 		;  //  Whoaaaaaaa whoaaaaaaa whoaaaaa
 	else
-		error("( expected", openParenExpected, &pi, t);
+		error(openParenExpected, &pi, t);
 	return pi;
 }
 
@@ -881,7 +898,7 @@ ParserInfo expCParen() {
 	if (!strcmp(t.lx, ")"))
 		;  // It's deep init it's deep mate
 	else
-		error(") expected", closeParenExpected, &pi, t);
+		error(closeParenExpected, &pi, t);
 	return pi;
 }
 
@@ -893,7 +910,7 @@ ParserInfo expOBrace() {
 	if (!strcmp(t.lx, "{"))
 		;  // Isimii yata motche
 	else
-		error("{ expected", openBraceExpected, &pi, t);
+		error(openBraceExpected, &pi, t);
 	return pi;
 }
 
@@ -905,7 +922,7 @@ ParserInfo expCBrace() {
 	if (!strcmp(t.lx, "}"))
 		;  // Isimii yata motche
 	else
-		error("} expected", closeBraceExpected, &pi, t);
+		error(closeBraceExpected, &pi, t);
 	return pi;
 }
 
@@ -917,19 +934,16 @@ ParserInfo expSColon() {
 	if (!strcmp(t.lx, ";"))
 		;  // Isimii yata motche
 	else
-		error("; expected", semicolonExpected, &pi, t);
+		error(semicolonExpected, &pi, t);
 	return pi;
 }
 
 
-void error(char *msg, SyntaxErrors e, ParserInfo *pi, Token t) {
+void error(SyntaxErrors e, ParserInfo *pi, Token t) {
 	pi->tk = t;
 	pi->er = e;
-	if (t.tp == ERR) {
+	if (t.tp == ERR)
 		pi->er = lexerErr;
-	}
-	else 
-		printf("Error, line %i, close to %s, %s.\n", t.ln, t.lx, msg);
 }
 
 

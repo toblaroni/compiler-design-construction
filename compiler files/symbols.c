@@ -273,3 +273,5 @@ static methodTable *getCurrentMethod() {
 	return (currentClass->methods + currentClass->methodCount-1);
 }
 
+void changeScope(unsigned int newScope) { scope = newScope; }
+

@@ -8,12 +8,14 @@
 #define PROG_SCOPE   0
 #define CLASS_SCOPE  1
 #define METHOD_SCOPE 2
+#define IS_INIT  1
+#define NOT_INIT 0
 
  #define MAX_SYMBOLS 256 // Maxumimum symbols in a table
 
 // define your own types and function prototypes for the symbol table(s) module below
 typedef enum { CLASS, VAR, METHOD, BAD_TYPE } Type;
-typedef enum { INTEGER, ARG, STR, ARRAY, VOID } Kind;
+typedef enum { INTEGER, CHAR, BOOL, TYPE, ARG, STR, ARRAY, VOID } Kind;
 typedef enum { STATIC, FIELD } VarType;
 
 
