@@ -38,10 +38,26 @@ ParserInfo expOBrace();	// For when you expect {
 ParserInfo expCBrace();	// For when you expect }
 ParserInfo expSColon();	// For when you expect ;
 
+
 // Create a default ParserInfo struct
 ParserInfo newParserInfo() {
 	ParserInfo pi;
 	pi.er = none;
+	return pi;
+}
+
+// Adding a symbol to the table
+ParserInfo addSymbol(symbol s, Token t) {
+	ParserInfo pi = newParserInfo();
+
+	// Check the name hasn't already been taken
+	if ( findSymbol(s.name) != -1 ) {
+		error(redecIdentifier, &pi, t);
+		return pi;
+	}
+	// Set the name of the symbol to the lexeme of the token
+	strcpy(s.name, t.lx);
+	insertSymbol(s);
 	return pi;
 }
 
@@ -76,11 +92,9 @@ ParserInfo classDecl() {
 	pi = expId( &s, &t );
 	if (pi.er)
 		return pi;
-	// Check the name hasn't already been taken
-	if ( findSymbol(s.name) != -1 ) {
-		error(redecIdentifier, &pi, t);
-		return pi;
-	}
+
+	// Add class to the symbol table
+	addSymbol(s, t);
 
 	// Expect Open brace
 	pi = expOBrace();
@@ -156,13 +170,7 @@ ParserInfo classVarDecl() {
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
-	// Check to see if the type exists already (In the current scope) <- will always be class scope
-	if (findSymbol(t.lx) != -1) {
-		error(redecIdentifier, &pi, t);
-		return pi;
-	}
-	strcpy(s.name, t.lx);
-	insertSymbol(s);
+	addSymbol(s, t); // If there's no errors add the symbol to the table
 
 	// 0 or more ", identifier"
 	t = PeekNextToken();
@@ -174,6 +182,7 @@ ParserInfo classVarDecl() {
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
+		addSymbol(s, t);
 
 		t = PeekNextToken();
 	}
@@ -195,42 +204,55 @@ Kind type(ParserInfo *pi) {
 			return BOOL;
 	else if ( t.tp == ID )
 			return TYPE;
-	else
-		error(illegalType, pi, t);
+
+	error(illegalType, pi, t);
+	return BAD_KIND;
 }
 
 
 ParserInfo subroutineDecl() {
 	ParserInfo pi = newParserInfo();
 	Token t;
+	symbol s;
+	s.attr = malloc(sizeof(attributes));
 
 	t = GetNextToken();
 	// Expect constructor, function or method
-	if ((t.tp == RESWORD) &&
-		(!strcmp(t.lx, "constructor") || 
-		 !strcmp(t.lx, "function")    || 
-		 !strcmp(t.lx, "method")))
-		;  // We groovin' 
-	else {
+	if (!strcmp(t.lx, "constructor")) {
+		s.dataType   = METHOD;
+		s.attr->kind = CONSTRUCTOR;
+	} else if (!strcmp(t.lx, "function") || !strcmp(t.lx, "method")) {
+		s.dataType = METHOD;  // We groovin' 
+	} else {
 		error(subroutineDeclarErr, &pi, t);
 		return pi;
 	}
 		
 	t = GetNextToken();
 	// void or type
-	if (!strcmp(t.lx, "void") || !strcmp(t.lx, "int")  || 
-		!strcmp(t.lx, "char") || !strcmp(t.lx, "boolean") || t.tp == ID)  // If the lexeme is "void" or we have a type
-		;  // We mega chillin
+	// Return type of the subroutine
+	if (!strcmp(t.lx, "void"))
+		s.attr->returnType = VOID;
+	else if (!strcmp(t.lx, "int")) 
+		s.attr->returnType = INTEGER;	
+	else if (!strcmp(t.lx, "char")) 
+		s.attr->returnType = CHAR;	
+	else if (!strcmp(t.lx, "boolean")) 
+		s.attr->returnType = BOOL;	
+	else if (t.tp == ID) 
+		s.attr->returnType = TYPE;	
 	else {
 		error(syntaxError, &pi, t);
 		return pi;
 	}
 
 
-	symbol s;
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
+
+	// Make sure the symbol doesn't exist 
+
 
 	pi = expOParen();
 	if (pi.er)
