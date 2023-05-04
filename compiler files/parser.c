@@ -10,10 +10,10 @@
 void error(SyntaxErrors e, ParserInfo *pi, Token t);
 ParserInfo newParserInfo();
 ParserInfo classDecl();
-ParserInfo memberDecl();
+ParserInfo memberDecl( char *parentClass );
 ParserInfo classVarDecl();
 Kind type( ParserInfo *pi );
-ParserInfo subroutineDecl();
+ParserInfo subroutineDecl( char *parentClass );
 ParserInfo paramList();
 ParserInfo subroutineBody();
 ParserInfo statement();
@@ -93,6 +93,7 @@ ParserInfo classDecl() {
 	if (pi.er)
 		return pi;
 
+	char *className = t.lx;
 	// Add class to the symbol table
 	addSymbol(s, t);
 
@@ -107,7 +108,7 @@ ParserInfo classDecl() {
 			!strcmp(t.lx, "constructor") || !strcmp(t.lx, "function") || 
 			!strcmp(t.lx, "method") ) {
 						
-		pi = memberDecl();
+		pi = memberDecl( className );
 		if (pi.er)
 			return pi;
 
@@ -125,7 +126,7 @@ ParserInfo classDecl() {
 }
 
 
-ParserInfo memberDecl() {
+ParserInfo memberDecl( char *className ) {
 	ParserInfo pi = newParserInfo();
 	Token t;
 
@@ -134,7 +135,7 @@ ParserInfo memberDecl() {
 	if (!strcmp(t.lx, "static") || !strcmp(t.lx, "field"))
 		pi = classVarDecl();
 	else if (!strcmp(t.lx, "constructor") || !strcmp(t.lx, "function") || !strcmp(t.lx, "method")) 
-		pi = subroutineDecl();
+		pi = subroutineDecl( className );
 	else 
 		error(memberDeclarErr, &pi, t);
 
@@ -178,7 +179,6 @@ ParserInfo classVarDecl() {
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken(); // Consume the token
 
-		symbol s;
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
@@ -210,7 +210,24 @@ Kind type(ParserInfo *pi) {
 }
 
 
-ParserInfo subroutineDecl() {
+ParserInfo subroutineDecl( char *parentClass ) {
+	changeScope(METHOD_SCOPE);
+
+	/* Add the this symbol to the table */
+
+	symbol this;
+
+	this.name = malloc(strlen("this"));
+	strcpy(this.name, "this");
+
+	this.attr = malloc(sizeof(attributes));
+	this.attr->belongsTo = malloc( strlen(parentClass) );
+	strcpy(this.attr->belongsTo, parentClass);
+	this.dataType = CLASS;
+	insertSymbol(this);
+
+	/* ******************************* */
+
 	ParserInfo pi = newParserInfo();
 	Token t;
 	symbol s;
@@ -250,9 +267,12 @@ ParserInfo subroutineDecl() {
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
-
-	// Make sure the symbol doesn't exist 
-
+	// Check that the constructor is called "new" 
+	if (s.attr->kind == CONSTRUCTOR && strcmp("new", t.lx)) {
+		error(syntaxError, &pi, t);
+		return pi;
+	}
+	addSymbol(s, t); // If it's all gravy add to the table 
 
 	pi = expOParen();
 	if (pi.er)
@@ -274,6 +294,7 @@ ParserInfo subroutineDecl() {
 ParserInfo paramList() {
 	ParserInfo pi = newParserInfo();
 	Token t;
+	symbol s;
 
 	// either nothing || 1 or more type id(,)
 	t = PeekNextToken();
@@ -282,28 +303,29 @@ ParserInfo paramList() {
 		 strcmp(t.lx, "boolean") && t.tp != ID )
 		return pi;
 
-	pi = type();
+	s.dataType = VAR;
+	s.attr->kind = type(&pi);
 	if (pi.er)
 		return pi;
 
-	symbol s;
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
+	addSymbol(s, t);
 	
 	t = PeekNextToken();	
 	// Until you hit a close parenthesis
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken();
 
-		pi = type();
+		s.attr->kind = type(&pi);
 		if (pi.er)
 			return pi;
 
-		symbol s;
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
+		addSymbol(s, t);
 
 		t = PeekNextToken();
 	}
@@ -333,6 +355,7 @@ ParserInfo subroutineBody() {
 	}
 	
 	pi = expCBrace();
+	changeScope(CLASS_SCOPE); // End of the method
 	return pi;
 }
 
@@ -364,6 +387,7 @@ ParserInfo statement() {
 ParserInfo varDeclarStmt() {
 	ParserInfo pi = newParserInfo();
 	Token t;
+	symbol s;
 
 	t = GetNextToken();
 	if (!strcmp(t.lx, "var"))
@@ -373,28 +397,27 @@ ParserInfo varDeclarStmt() {
 		return pi;
 	}
 
-	pi = type();
+	s.attr->kind = type(&pi);
 	if (pi.er)
 		return pi;
 
-	symbol s;
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
+	addSymbol(s, t);
 
 	// { , id }
 	t = PeekNextToken();
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken(); // consume token
 
-		symbol s;
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
+		addSymbol(s, t);
 
 		t = PeekNextToken();
 	}
-
 	
 	pi = expSColon();
 	return pi;
@@ -404,6 +427,7 @@ ParserInfo varDeclarStmt() {
 ParserInfo letStmt() {
 	ParserInfo pi = newParserInfo();
 	Token t;
+	symbol s;
 
 	// Let keyword
 	t = GetNextToken();
@@ -414,7 +438,7 @@ ParserInfo letStmt() {
 		return pi;
 	}
 
-	symbol s;
+	// MAKE SURE THAT THE VARIABLE EXISTS INSIDE THE CURRENT CLASS
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
@@ -595,8 +619,9 @@ ParserInfo doStmt() {
 ParserInfo subroutineCall() {
 	ParserInfo pi = newParserInfo();
 	Token t;
-
 	symbol s;
+
+	// MAKE SURE THE SUBROUTINE EXISTS
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
@@ -606,6 +631,7 @@ ParserInfo subroutineCall() {
 		GetNextToken(); // Consume token
 
 		symbol s;
+		// MAKE SURE THE SUBROUTINE EXISTS
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
@@ -816,6 +842,9 @@ ParserInfo operand() {
 
 	// ID [ .ID ] [ [ expression ] | ( expressionList ) ]
 	if (t.tp == ID) {
+
+		// CHECK THAT THE SYMBOL EXISTS
+
 		t = PeekNextToken();
 		if (!strcmp(t.lx, ".")) {
 			GetNextToken(); // consume token

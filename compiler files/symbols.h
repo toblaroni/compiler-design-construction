@@ -28,6 +28,7 @@ typedef struct {
   VarType varType;
   unsigned int paramCount; // Number of parameters
   short isInit; // Is it initialised
+  char *belongsTo;
 } attributes;
 
 
