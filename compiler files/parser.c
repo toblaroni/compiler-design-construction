@@ -51,7 +51,7 @@ ParserInfo addSymbol(symbol s, Token t) {
 	ParserInfo pi = newParserInfo();
 
 	// Check the name hasn't already been taken
-	if ( findSymbol(s.name) != -1 ) {
+	if ( findSymbol(t.lx) != -1 ) {
 		error(redecIdentifier, &pi, t);
 		return pi;
 	}
@@ -93,9 +93,12 @@ ParserInfo classDecl() {
 	if (pi.er)
 		return pi;
 
-	char *className = t.lx;
+	char *className = malloc(strlen(t.lx)+1);
+	strcpy(className, t.lx);
 	// Add class to the symbol table
 	addSymbol(s, t);
+	if (pi.er)
+		return pi;
 
 	// Expect Open brace
 	pi = expOBrace();
@@ -114,6 +117,7 @@ ParserInfo classDecl() {
 
 		t = PeekNextToken();
 	}
+	free(className);
 	
 	// Expect closing brace
 	pi = expCBrace();
@@ -172,6 +176,8 @@ ParserInfo classVarDecl() {
 	if (pi.er)
 		return pi;
 	addSymbol(s, t); // If there's no errors add the symbol to the table
+	if (pi.er)
+		return pi;
 
 	// 0 or more ", identifier"
 	t = PeekNextToken();
@@ -183,6 +189,8 @@ ParserInfo classVarDecl() {
 		if (pi.er)
 			return pi;
 		addSymbol(s, t);
+		if (pi.er)
+			return pi;
 
 		t = PeekNextToken();
 	}
@@ -211,23 +219,6 @@ Kind type(ParserInfo *pi) {
 
 
 ParserInfo subroutineDecl( char *parentClass ) {
-	changeScope(METHOD_SCOPE);
-
-	/* Add the this symbol to the table */
-
-	symbol this;
-
-	this.name = malloc(strlen("this"));
-	strcpy(this.name, "this");
-
-	this.attr = malloc(sizeof(attributes));
-	this.attr->belongsTo = malloc( strlen(parentClass) );
-	strcpy(this.attr->belongsTo, parentClass);
-	this.dataType = CLASS;
-	insertSymbol(this);
-
-	/* ******************************* */
-
 	ParserInfo pi = newParserInfo();
 	Token t;
 	symbol s;
@@ -272,7 +263,10 @@ ParserInfo subroutineDecl( char *parentClass ) {
 		error(syntaxError, &pi, t);
 		return pi;
 	}
+
 	addSymbol(s, t); // If it's all gravy add to the table 
+	if (pi.er)
+		return pi;
 
 	pi = expOParen();
 	if (pi.er)
@@ -286,7 +280,7 @@ ParserInfo subroutineDecl( char *parentClass ) {
 	if (pi.er)
 		return pi;
 
-	pi = subroutineBody();  // We want that subroutine body
+	pi = subroutineBody(); 
 	return pi;
 }
 
@@ -312,6 +306,8 @@ ParserInfo paramList() {
 	if (pi.er)
 		return pi;
 	addSymbol(s, t);
+	if (pi.er)
+		return pi;
 	
 	t = PeekNextToken();	
 	// Until you hit a close parenthesis
@@ -326,6 +322,8 @@ ParserInfo paramList() {
 		if (pi.er)
 			return pi;
 		addSymbol(s, t);
+		if (pi.er)
+			return pi;
 
 		t = PeekNextToken();
 	}
@@ -405,6 +403,8 @@ ParserInfo varDeclarStmt() {
 	if (pi.er)
 		return pi;
 	addSymbol(s, t);
+	if (pi.er)
+		return pi;
 
 	// { , id }
 	t = PeekNextToken();
@@ -415,6 +415,8 @@ ParserInfo varDeclarStmt() {
 		if (pi.er)
 			return pi;
 		addSymbol(s, t);
+		if (pi.er)
+			return pi;
 
 		t = PeekNextToken();
 	}
@@ -919,7 +921,7 @@ ParserInfo expId( symbol *sym, Token *tkn ) {
 	t = GetNextToken();
 	if (t.tp == ID) {
 		// Copy the lexeme of the identifier to the name of the symbol
-		sym->name = malloc(strlen(t.lx));
+		sym->name = malloc(strlen(t.lx)+1);
 		strcpy(sym->name, t.lx); 
 		*tkn = t;
 	}

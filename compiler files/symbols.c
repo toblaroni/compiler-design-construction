@@ -70,6 +70,9 @@ void insertSymbol( symbol s ) {
 		insertToClass(s);
 	else if ( scope == METHOD_SCOPE )
 		insertToMethod(s);
+	else {
+		progTable.symbols[progTable.classCount] = s;
+	}
 
 	// Checking to see if the symbol is a class or a method
 	// If so allocate memory for the table and change the scope of the program
@@ -233,9 +236,8 @@ void insertTable() {
 		currentClass->symbolCount = 0;
 
 		// Set all the symbol attributes to null
-		for ( int i = 0; i < MAX_SYMBOLS; ++i ) {
+		for ( int i = 0; i < MAX_SYMBOLS; ++i )
 			currentClass->symbols[i].attr = NULL;
-		}
 		
 		return;
 	}
@@ -243,10 +245,9 @@ void insertTable() {
 	// Class scope means we're inserting a method
 	// If there's already a method inside the table then we don't need to malloc
 	currentClass = getCurrentClass();
-	if ( currentClass->methodCount == 0 && currentClass != NULL ) {
+	if ( currentClass->methodCount == 0 && currentClass != NULL ) 
 		// We want to allocate memory to the tables field of the current table
 		currentClass->methods = malloc( sizeof(methodTable) * MAX_METHODS );
-	}
 
 	currentClass->methodCount ++;
 	scope = METHOD_SCOPE;
@@ -257,6 +258,20 @@ void insertTable() {
 	// Set all the symbol attributes to null
 	for ( int i = 0; i < MAX_SYMBOLS; ++i )
 		currentMethod->symbols[i].attr = NULL;
+
+	// Set the first symbol of the method table to 'this'
+	symbol this;	
+	this.attr = malloc(sizeof(attributes));
+	this.name = malloc(sizeof("this"));
+	this.attr->belongsTo = malloc(sizeof(progTable.symbols[progTable.classCount].name));
+
+	strcpy(this.attr->belongsTo, "this");
+	printf(progTable.classCount);
+	strcpy(this.attr->belongsTo, progTable.symbols[progTable.classCount].name);
+
+	currentMethod->symbols[0] = this;
+	currentMethod->symbolCount ++;
+
 }
 
 
