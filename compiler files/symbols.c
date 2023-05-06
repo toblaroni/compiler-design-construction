@@ -265,9 +265,9 @@ void insertTable() {
 	this.name = malloc(sizeof("this"));
 	this.attr->belongsTo = malloc(sizeof(progTable.symbols[progTable.classCount].name));
 
-	strcpy(this.attr->belongsTo, "this");
-	printf(progTable.classCount);
-	strcpy(this.attr->belongsTo, progTable.symbols[progTable.classCount].name);
+	strcpy(this.name, "this");
+	printf("the Current class is called %s\n", progTable.symbols[progTable.classCount-1].name); 
+	strcpy(this.attr->belongsTo, progTable.symbols[progTable.classCount-1].name);
 
 	currentMethod->symbols[0] = this;
 	currentMethod->symbolCount ++;

@@ -39,6 +39,8 @@ ParserInfo expCBrace();	// For when you expect }
 ParserInfo expSColon();	// For when you expect ;
 
 
+void * newAttr() { return malloc(sizeof(attributes)); }
+
 // Create a default ParserInfo struct
 ParserInfo newParserInfo() {
 	ParserInfo pi;
@@ -154,7 +156,7 @@ ParserInfo classVarDecl() {
 	s.dataType = VAR;
 
 	// Allocate memory for the variables attributes
-	s.attr = malloc( sizeof(attributes) );
+	s.attr = newAttr();
 	s.attr->isInit = NOT_INIT;
 
 	t = GetNextToken();
@@ -222,7 +224,7 @@ ParserInfo subroutineDecl( char *parentClass ) {
 	ParserInfo pi = newParserInfo();
 	Token t;
 	symbol s;
-	s.attr = malloc(sizeof(attributes));
+	s.attr = newAttr();
 
 	t = GetNextToken();
 	// Expect constructor, function or method
@@ -289,6 +291,7 @@ ParserInfo paramList() {
 	ParserInfo pi = newParserInfo();
 	Token t;
 	symbol s;
+	s.attr = newAttr();
 
 	// either nothing || 1 or more type id(,)
 	t = PeekNextToken();
@@ -299,6 +302,7 @@ ParserInfo paramList() {
 
 	s.dataType = VAR;
 	s.attr->kind = type(&pi);
+	s.attr->varType = ARG;
 	if (pi.er)
 		return pi;
 
@@ -313,8 +317,11 @@ ParserInfo paramList() {
 	// Until you hit a close parenthesis
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken();
+		symbol s;
+		s.attr = newAttr();
 
 		s.attr->kind = type(&pi);
+		s.attr->varType = ARG;
 		if (pi.er)
 			return pi;
 
@@ -395,6 +402,7 @@ ParserInfo varDeclarStmt() {
 		return pi;
 	}
 
+	s.attr = newAttr();
 	s.attr->kind = type(&pi);
 	if (pi.er)
 		return pi;

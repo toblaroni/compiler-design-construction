@@ -47,13 +47,13 @@ ParserInfo compile(char* dir_name) {
 
 
 	while ( (dirEntr = readdir(dir)) != NULL ) {
-		strcpy(currentFile, "./");
-		strcat(currentFile, dir_name);
-		strcat(currentFile, "/");
-
 		char *fileName = dirEntr->d_name;
 		if (!strcmp(fileName, ".") || !strcmp(fileName, ".."))
 			continue;
+
+		strcpy(currentFile, "./");
+		strcat(currentFile, dir_name);
+		strcat(currentFile, "/");
 
 		// Concatencate the name of the file at the end of the folder 
 		strcat(currentFile, fileName);
@@ -97,7 +97,7 @@ void PrintError( ParserInfo pi ) {
 #ifndef TEST_COMPILER
 int main() {
 	InitCompiler();
-	ParserInfo p = compile("Pong");
+	ParserInfo p = compile("Test");
 	PrintError(p);
 	StopCompiler();
 	return 1;

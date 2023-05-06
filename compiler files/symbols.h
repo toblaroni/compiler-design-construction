@@ -15,8 +15,8 @@
 
 // define your own types and function prototypes for the symbol table(s) module below
 typedef enum { CLASS, VAR, METHOD, BAD_TYPE } Type;
-typedef enum { INTEGER, CHAR, BOOL, TYPE, ARG, STR, ARRAY, VOID, CONSTRUCTOR, BAD_KIND } Kind;
-typedef enum { STATIC, FIELD } VarType;
+typedef enum { INTEGER, CHAR, BOOL, TYPE, STR, ARRAY, VOID, CONSTRUCTOR, BAD_KIND } Kind;
+typedef enum { STATIC, FIELD, ARG } VarType;
 
 
 // Structure that holds the attributes of 
