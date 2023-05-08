@@ -481,6 +481,8 @@ ParserInfo letStmt() {
 		return pi;
 	}
 
+	// We need to know the type of the symbol on the RHS
+
 	// 0 Or 1 [ expression ]
 	// Expression should result in an integer
 	t = PeekNextToken();

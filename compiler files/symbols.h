@@ -75,6 +75,7 @@ struct methodTable {
 void initTable();
 void insertSymbol( symbol s ); // Insert takes a symbol and inserts it into the table
 int findSymbol( char *name, unsigned int flag );
+symbol * getSymbol( char *name ); // Returns the symbol with that name
 void closeTable();
 void changeScope( unsigned int newScope );
 

@@ -223,6 +223,23 @@ static void insertToMethod( symbol s ) {
 }
 
 
+symbol * getSymbol( char *name ) {
+	int i;
+	if (scope == METHOD_SCOPE) {
+		i = findInMethod(name);
+		if (i != -1)
+			return &getCurrentMethod()->symbols[i];
+	}
+
+	// Class scope 
+	i = findInClass(name);
+	if (i != -1)
+		return &getCurrentClass()->symbols[i];
+
+	return NULL;
+}
+
+
 // Inserting a table into existing tables
 void insertTable() {
 	classTable *currentClass;
