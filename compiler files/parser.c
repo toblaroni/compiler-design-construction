@@ -502,6 +502,7 @@ ParserInfo letStmt() {
 		return pi;
 	}
 
+	// Check that the type(LHS) == type(RHS)
 	pi = expression();
 	if (pi.er)
 		return pi;
