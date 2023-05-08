@@ -71,6 +71,7 @@ void insertSymbol( symbol s ) {
 	else if ( scope == METHOD_SCOPE )
 		insertToMethod(s);
 	else {
+		printf("Adding %s to the program table\n", s.name);
 		progTable.symbols[progTable.classCount] = s;
 	}
 
@@ -105,28 +106,33 @@ int findSymbol( char *name ) {
 }
 
 
-
-
 void closeTable() {
 	// ALSO NEED TO FREE SYMBOL NAMES IF ALLOCATED
 	// ALso have to loop through all symbols freeing the attributes
 	for (int i = 0; i < progTable.classCount; ++i) {
 		classTable *cClass = progTable.classes + i;
 
+		// printf("Freeing from %s\n", progTable.symbols[i].name);
+
 		for (int j = 0; j < cClass->methodCount; ++j) {
 			methodTable *cMethod = cClass->methods + j; 
 
 			// Free method level symbol attributes
 			for (int k = 0; k < cMethod->symbolCount; ++k) {
-				if (cMethod->symbols[k].attr != NULL)
+				if (cMethod->symbols[k].attr != NULL) {
+					// printf( "Freeing %s\n", cMethod->symbols[k].name );
 					free( cMethod->symbols[k].attr );
+				}
 			}
 		}
 
 		// Then free the class symbol attributes
+		// printf("Freeing the class level symbols\n");
 		for (int j = 0; j < cClass->symbolCount; ++j) {
-			if (cClass->symbols[j].attr != NULL)
+			if (cClass->symbols[j].attr != NULL) {
+				// printf("Freeing %s\n", cClass->symbols[j].name);
 				free(cClass->symbols[j].attr);
+			}
 		}
 	}
 	
@@ -137,9 +143,8 @@ void closeTable() {
 	}
 
 	
-	// Loop through the tables freeing up memory allocated for the table arrays
+	// loop through all classes
 	for (int i = 0; i < progTable.classCount; ++i) { 
-		// loop through all classes
 		free((progTable.classes + i)->methods); // Free method tables
 	}
 
@@ -244,6 +249,8 @@ void insertTable() {
 
 	// Class scope means we're inserting a method
 	// If there's already a method inside the table then we don't need to malloc
+	printf("Allocating new method table in %s\n", progTable.symbols[progTable.classCount-1].name); 
+
 	currentClass = getCurrentClass();
 	if ( currentClass->methodCount == 0 && currentClass != NULL ) 
 		// We want to allocate memory to the tables field of the current table
@@ -261,12 +268,13 @@ void insertTable() {
 
 	// Set the first symbol of the method table to 'this'
 	symbol this;	
+
+	// Allocate
 	this.attr = malloc(sizeof(attributes));
-	this.name = malloc(sizeof("this"));
-	this.attr->belongsTo = malloc(sizeof(progTable.symbols[progTable.classCount].name));
+	this.name = malloc(strlen("this")+1);
+	this.attr->belongsTo = malloc(sizeof(progTable.symbols[progTable.classCount].name)+1);
 
 	strcpy(this.name, "this");
-	printf("the Current class is called %s\n", progTable.symbols[progTable.classCount-1].name); 
 	strcpy(this.attr->belongsTo, progTable.symbols[progTable.classCount-1].name);
 
 	currentMethod->symbols[0] = this;

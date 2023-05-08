@@ -158,18 +158,21 @@ ParserInfo classVarDecl() {
 	// Allocate memory for the variables attributes
 	s.attr = newAttr();
 	s.attr->isInit = NOT_INIT;
+	VarType vType;
 
 	t = GetNextToken();
 	if (!strcmp(t.lx, "static")) 
-		s.attr->varType = STATIC; // We've got a static variable
+		vType = STATIC; // We've got a static variable
 	else if (!strcmp(t.lx, "field")) 
-		s.attr->varType = FIELD; // We've got a field variable
+		vType = FIELD; // We've got a field variable
 	else {
 		error(memberDeclarErr, &pi, t);
 		return pi;
 	}
 
-	s.attr->kind = type(&pi);
+	s.attr->varType = vType;
+	Kind k = type(&pi);
+	s.attr->kind = k;
 	if (pi.er)
 		return pi;
 
@@ -186,6 +189,12 @@ ParserInfo classVarDecl() {
 	// If semi colon then exit
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken(); // Consume the token
+		symbol s;
+		s.dataType = VAR;
+		s.attr = newAttr();
+		s.attr->varType = vType;
+		s.attr->isInit = NOT_INIT;
+		s.attr->kind = k;
 
 		pi = expId(&s, &t);
 		if (pi.er)
@@ -321,6 +330,7 @@ ParserInfo paramList() {
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken();
 		symbol s;
+		s.dataType = VAR;
 		s.attr = newAttr();
 		s.attr->isInit = IS_INIT;
 
@@ -400,7 +410,7 @@ ParserInfo varDeclarStmt() {
 
 	t = GetNextToken();
 	if (!strcmp(t.lx, "var"))
-		;  // Look on down from the bridggeeee
+		s.dataType = VAR;  // Look on down from the bridggeeee
 	else {
 		error(syntaxError, &pi, t);
 		return pi;
@@ -408,7 +418,8 @@ ParserInfo varDeclarStmt() {
 
 	s.attr = newAttr();
 	s.attr->isInit = NOT_INIT;
-	s.attr->kind = type(&pi);
+	Kind k = type(&pi);
+	s.attr->kind = k;
 	if (pi.er)
 		return pi;
 
@@ -423,6 +434,12 @@ ParserInfo varDeclarStmt() {
 	t = PeekNextToken();
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken(); // consume token
+
+		symbol s;
+		s.dataType = VAR;
+		s.attr = newAttr();
+		s.attr->isInit = NOT_INIT;
+		s.attr->kind = k;
 
 		pi = expId(&s, &t);
 		if (pi.er)

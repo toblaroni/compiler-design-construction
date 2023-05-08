@@ -60,8 +60,13 @@ ParserInfo compile(char* dir_name) {
 		printf("Parsing %s\n", currentFile);
 		if (!InitParser(currentFile))
 			exit(-1);
-		Parse();
+
+		p = Parse();
+		if (p.er)
+			break;
+
 		StopParser();
+		printf("Successfully parsed %s.\n", currentFile);
 	}
 
 	closedir(dir);
