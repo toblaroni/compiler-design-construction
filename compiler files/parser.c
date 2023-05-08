@@ -53,7 +53,8 @@ ParserInfo addSymbol(symbol s, Token t) {
 	ParserInfo pi = newParserInfo();
 
 	// Check the name hasn't already been taken
-	if ( findSymbol(t.lx) != -1 ) {
+	// Search the current scope (METHOD or CLASS)
+	if ( findSymbol(t.lx, LOCAL_SEARCH) != -1 ) {
 		error(redecIdentifier, &pi, t);
 		return pi;
 	}
@@ -98,7 +99,7 @@ ParserInfo classDecl() {
 	char *className = malloc(strlen(t.lx)+1);
 	strcpy(className, t.lx);
 	// Add class to the symbol table
-	addSymbol(s, t);
+	pi = addSymbol(s, t);
 	if (pi.er)
 		return pi;
 
@@ -180,7 +181,7 @@ ParserInfo classVarDecl() {
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
-	addSymbol(s, t); // If there's no errors add the symbol to the table
+	pi = addSymbol(s, t); // If there's no errors add the symbol to the table
 	if (pi.er)
 		return pi;
 
@@ -199,7 +200,7 @@ ParserInfo classVarDecl() {
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
-		addSymbol(s, t);
+		pi = addSymbol(s, t);
 		if (pi.er)
 			return pi;
 
@@ -276,7 +277,7 @@ ParserInfo subroutineDecl( char *parentClass ) {
 		return pi;
 	}
 
-	addSymbol(s, t); // If it's all gravy add to the table 
+	pi = addSymbol(s, t); // If it's all gravy add to the table 
 	if (pi.er)
 		return pi;
 
@@ -321,7 +322,7 @@ ParserInfo paramList() {
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
-	addSymbol(s, t);
+	pi = addSymbol(s, t);
 	if (pi.er)
 		return pi;
 	
@@ -342,7 +343,7 @@ ParserInfo paramList() {
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
-		addSymbol(s, t);
+		pi = addSymbol(s, t);
 		if (pi.er)
 			return pi;
 
@@ -426,7 +427,7 @@ ParserInfo varDeclarStmt() {
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
-	addSymbol(s, t);
+	pi = addSymbol(s, t);
 	if (pi.er)
 		return pi;
 
@@ -444,7 +445,7 @@ ParserInfo varDeclarStmt() {
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
-		addSymbol(s, t);
+		pi = addSymbol(s, t);
 		if (pi.er)
 			return pi;
 
@@ -470,12 +471,18 @@ ParserInfo letStmt() {
 		return pi;
 	}
 
-	// MAKE SURE THAT THE VARIABLE EXISTS INSIDE THE CURRENT CLASS
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
+	// Make sure the symbol exists in the current class
+	int f = findSymbol(t.lx, CLASS_SEARCH);
+	if (f == -1) {
+		error(undecIdentifier, &pi, t);
+		return pi;
+	}
 
 	// 0 Or 1 [ expression ]
+	// Expression should result in an integer
 	t = PeekNextToken();
 	if (!strcmp(t.lx, "[")) {
 		GetNextToken(); // consume the token

@@ -80,22 +80,37 @@ int StopCompiler () {
 
 void PrintError( ParserInfo pi ) {
 	// Error messages in order of parser info enum
-	static const char* errorMsgs[18] = { "File Successfully compiled with no errors",
-										 "lexical error.", "keyword class expected",
-										 "identifier expected", "{ expected", "} expected",
+	static const char* parserMsgs[18] = { "File Successfully compiled with no errors",
+										 "lexical error.",
+										 "keyword class expected",
+										 "identifier expected",
+										 "{ expected",
+										 "} expected",
 										 "class member declaration must begin with static, field, constructor, function, or method",
 										 "class variables must begin with field or static",
 										 "a type must be int, char, boolean or identifier",
-										 "( expected", ") expected", "] expected", "= expected",
-										 "other syntax error", "undeclared identifier (e.g. class, subroutine or variable",
+										 "; expected",
+										 "subroutine declaration must begin with constructor, function, or method",
+										 "( expected",
+										 ") expected",
+										 "] expected",
+										 "= expected",
+										 "other syntax error",
+										 "undeclared identifier (e.g. class, subroutine or variable",
 										 "redeclaration of identifier in the same scope" };
 
+	static const char* lexerMsgs[5] = {"End of file in comment", "New line in string",
+									   "End of file in string", "Illegal symbol", "No Lexical errors"};
+
+
+
 	if (!pi.er)
-		printf("%s\n", errorMsgs[pi.er]);
+		printf("%s\n", parserMsgs[pi.er]);
 	else if (pi.tk.tp == ERR) 
-	 	printf("%s at line %i\n", pi.tk.lx, pi.tk.ln);
+	 	printf("Lexical error while compiling %s. %s. %s at line %i\n", pi.tk.fl, lexerMsgs[pi.tk.ec],
+																pi.tk.lx, pi.tk.ln);
 	else 
-		printf("Error, line %i, close to %s, %s.\n", pi.tk.ln, pi.tk.lx, errorMsgs[pi.er]);
+		printf("Error while parsing %s. line %i, close to %s, %s.\n", pi.tk.fl, pi.tk.ln, pi.tk.lx, parserMsgs[pi.er]);
 }
 
 

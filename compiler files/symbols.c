@@ -63,15 +63,11 @@ void initTable() {
 
 void insertSymbol( symbol s ) {
 
-	// Check that the symbol doesn't already exist
-	// if ( findSymbol( s ) != -1 ) ...
-	
 	if ( scope == CLASS_SCOPE )
 		insertToClass(s);
 	else if ( scope == METHOD_SCOPE )
 		insertToMethod(s);
 	else {
-		printf("Adding %s to the program table\n", s.name);
 		progTable.symbols[progTable.classCount] = s;
 	}
 
@@ -85,24 +81,38 @@ void insertSymbol( symbol s ) {
 // Loop thorugh the symbols and see if the name already exists
 // Return the index of the symbol if it exists
 // Else return -1
-int findSymbol( char *name ) {
+int findSymbol( char *name, unsigned int flag ) {
+	static int symbolIndex;
+
+	if (scope == PROG_SCOPE) {
+		for (int i = 0; i < progTable.classCount; ++i) {
+			if (!strcmp(progTable.symbols[i].name, name))
+				return i;
+		}
+		return -1;
+	}
 	
 	// First check current scope.
 	// Then check the scope above ( if method, then class etc. )
-	if ( scope == METHOD_SCOPE ) {
-		int symbolIndex = findInMethod(name);
+	if ( scope == METHOD_SCOPE && flag == LOCAL_SEARCH ) {
+		symbolIndex = findInMethod(name);
+		return symbolIndex;
 
-		if ( symbolIndex != -1 )
-			return symbolIndex;
-
-	} else if ( scope == CLASS_SCOPE ) {
-		int symbolIndex = findInClass(name);
-
-		if ( symbolIndex != -1 )
-			return symbolIndex;
+	} else if ( scope == CLASS_SCOPE && flag == LOCAL_SEARCH ) {
+		symbolIndex = findInClass(name);
+		return symbolIndex;
 	} 
 
-	return -1;
+	// Class level search
+	if (scope == METHOD_SCOPE) {
+		symbolIndex = findInMethod(name);
+		if (symbolIndex != -1)
+			return symbolIndex;
+		symbolIndex = findInClass(name);
+		return symbolIndex;
+	}
+	symbolIndex = findInClass(name);
+	return symbolIndex;
 }
 
 
@@ -155,17 +165,12 @@ void closeTable() {
 static int findInMethod( char *name ) {
 	methodTable *currentMethod = getCurrentMethod();
 
-	// Search Prog Level
+	symbol sym;
 	for (int i = 0; i < currentMethod->symbolCount; ++i) {
-		symbol sym = currentMethod->symbols[i];
+		sym = currentMethod->symbols[i];
 		if (!strcmp(sym.name, name))
 			return i;
 	}
-
-	// Search the class
-	int symbolIndex = findInClass( name );
-	if (symbolIndex != -1)
-		return symbolIndex;
 
 	return -1;
 }
@@ -174,9 +179,9 @@ static int findInMethod( char *name ) {
 static int findInClass( char *name ) {
 	classTable *currentClass = getCurrentClass();
 
-	// Search Prog Level
+	symbol sym;
 	for ( int i = 0; i < currentClass->symbolCount; ++i ) {
-		symbol sym = currentClass->symbols[i];
+		sym = currentClass->symbols[i];
 		if (!strcmp(sym.name, name))
 			return i;
 	}
@@ -249,8 +254,6 @@ void insertTable() {
 
 	// Class scope means we're inserting a method
 	// If there's already a method inside the table then we don't need to malloc
-	printf("Allocating new method table in %s\n", progTable.symbols[progTable.classCount-1].name); 
-
 	currentClass = getCurrentClass();
 	if ( currentClass->methodCount == 0 && currentClass != NULL ) 
 		// We want to allocate memory to the tables field of the current table

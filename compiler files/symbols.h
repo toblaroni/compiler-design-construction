@@ -8,8 +8,14 @@
 #define PROG_SCOPE   0
 #define CLASS_SCOPE  1
 #define METHOD_SCOPE 2
+
+// Is initialised flag
 #define IS_INIT  1
 #define NOT_INIT 0
+
+// Search local or search class flags for finding symbols
+#define LOCAL_SEARCH  1
+#define CLASS_SEARCH  0
 
  #define MAX_SYMBOLS 256 // Maxumimum symbols in a table
 
@@ -68,7 +74,7 @@ struct methodTable {
 
 void initTable();
 void insertSymbol( symbol s ); // Insert takes a symbol and inserts it into the table
-int findSymbol( char *name );
+int findSymbol( char *name, unsigned int flag );
 void closeTable();
 void changeScope( unsigned int newScope );
 
