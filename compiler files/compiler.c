@@ -15,7 +15,6 @@ Date Work Commenced: 25/04/23
 *************************************************************************/
 
 #include <dirent.h>
-#include <sys/dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -51,6 +50,7 @@ ParserInfo compile(char* dir_name) {
 		if (!strcmp(fileName, ".") || !strcmp(fileName, ".."))
 			continue;
 
+		// Set the compiler to open at "./<dir_name>/<file_name> 
 		strcpy(currentFile, "./");
 		strcat(currentFile, dir_name);
 		strcat(currentFile, "/");
@@ -95,9 +95,13 @@ void PrintError( ParserInfo pi ) {
 
 
 #ifndef TEST_COMPILER
-int main() {
+int main( int argv, char **argc ) {
+	if (argv != 2) {
+		printf("Usage: './compile <folder>'\n");
+		exit(1);
+	}
 	InitCompiler();
-	ParserInfo p = compile("Test");
+	ParserInfo p = compile(argc[1]);
 	PrintError(p);
 	StopCompiler();
 	return 1;

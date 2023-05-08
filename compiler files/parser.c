@@ -225,6 +225,7 @@ ParserInfo subroutineDecl( char *parentClass ) {
 	Token t;
 	symbol s;
 	s.attr = newAttr();
+	s.attr->isInit = IS_INIT;
 
 	t = GetNextToken();
 	// Expect constructor, function or method
@@ -282,6 +283,7 @@ ParserInfo subroutineDecl( char *parentClass ) {
 	if (pi.er)
 		return pi;
 
+	// ***** GETS PASSED THE RETURN TYPE OF THE METHOD *****
 	pi = subroutineBody(); 
 	return pi;
 }
@@ -292,6 +294,7 @@ ParserInfo paramList() {
 	Token t;
 	symbol s;
 	s.attr = newAttr();
+	s.attr->isInit = IS_INIT; // Value passed in when function is called
 
 	// either nothing || 1 or more type id(,)
 	t = PeekNextToken();
@@ -319,6 +322,7 @@ ParserInfo paramList() {
 		GetNextToken();
 		symbol s;
 		s.attr = newAttr();
+		s.attr->isInit = IS_INIT;
 
 		s.attr->kind = type(&pi);
 		s.attr->varType = ARG;
@@ -403,6 +407,7 @@ ParserInfo varDeclarStmt() {
 	}
 
 	s.attr = newAttr();
+	s.attr->isInit = NOT_INIT;
 	s.attr->kind = type(&pi);
 	if (pi.er)
 		return pi;
