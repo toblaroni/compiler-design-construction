@@ -176,9 +176,10 @@ ParserInfo classVarDecl() {
 	if (pi.er)
 		return pi;
 	s.attr->kind = k;
-	// If the kind == TYPE then store the id of that type
+
+	// If the kind == TYPE then store the token
 	if (k == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
-			insertUSymbol(t);
+		insertUSymbol(t);
 
 	// Expect an identifier
 	pi = expId(&s, &t);
@@ -263,8 +264,11 @@ ParserInfo subroutineDecl( char *parentClass ) {
 		s.attr->returnType = CHAR;	
 	else if (!strcmp(t.lx, "boolean")) 
 		s.attr->returnType = BOOL;	
-	else if (t.tp == ID) 
+	else if (t.tp == ID) {
 		s.attr->returnType = TYPE;	
+		if (findSymbol(t.lx, PROG_SEARCH) == -1)
+			insertUSymbol(t);
+	}
 	else {
 		error(syntaxError, &pi, t);
 		return pi;
@@ -312,7 +316,7 @@ ParserInfo paramList() {
 	t = PeekNextToken();
 	// Check no params
 	if ( strcmp(t.lx, "int") && strcmp(t.lx, "char") && 
-			strcmp(t.lx, "boolean") && t.tp != ID )
+		 strcmp(t.lx, "boolean") && t.tp != ID )
 		return pi;
 
 	s.dataType = VAR;
@@ -320,6 +324,9 @@ ParserInfo paramList() {
 	s.attr->varType = ARG;
 	if (pi.er)
 		return pi;
+
+	if (s.attr->kind == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
+		insertUSymbol(t);
 
 	pi = expId(&s, &t);
 	if (pi.er)
@@ -340,6 +347,8 @@ ParserInfo paramList() {
 		s.attr->varType = ARG;
 		if (pi.er)
 			return pi;
+		if (s.attr->kind == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
+			insertUSymbol(t);
 
 		pi = expId(&s, &t);
 		if (pi.er)
@@ -423,6 +432,9 @@ ParserInfo varDeclarStmt() {
 	s.attr->kind = k;
 	if (pi.er)
 		return pi;
+
+	if (k == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
+		insertUSymbol(t);
 
 	pi = expId(&s, &t);
 	if (pi.er)
