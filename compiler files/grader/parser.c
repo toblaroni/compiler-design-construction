@@ -91,7 +91,7 @@ ParserInfo classDecl() {
 	// We want to create a new symbol with the of the class
 	// We also want to see if the class name already exists
 	symbol s;
-	s.attr = newAttr();
+	s.attr = NULL;
 	s.dataType = CLASS;
 	pi = expId( &s, &t );
 	if (pi.er)
@@ -674,16 +674,19 @@ ParserInfo subroutineCall() {
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
+	if (findSymbol(t.lx, PROG_SEARCH) == -1)
+		insertUSymbol(t);
 
 	t = PeekNextToken();
 	if (!strcmp(t.lx, ".")) {
 		GetNextToken(); // Consume token
 
-		symbol s;
 		// MAKE SURE THE SUBROUTINE EXISTS
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
+		if (findSymbol(t.lx, PROG_SEARCH) == -1)
+			insertUSymbol(t);
 	}
 
 	pi = expOParen();
@@ -892,13 +895,19 @@ ParserInfo operand() {
 	if (t.tp == ID) {
 
 		// CHECK THAT THE SYMBOL EXISTS
+		if (findSymbol(t.lx, PROG_SCOPE) == -1) {
+			// Add to the undeclared symbol table
+			insertUSymbol(t);
+		}
 
 		t = PeekNextToken();
 		if (!strcmp(t.lx, ".")) {
 			GetNextToken(); // consume token
 			t = GetNextToken();
-			if (t.tp == ID)
-				; // Chillin'
+			if (t.tp == ID) {
+				if (findSymbol(t.lx, PROG_SCOPE) == -1)
+					insertUSymbol(t);
+			}
 			else {
 				error(idExpected, &pi, t);
 				return pi;

@@ -366,7 +366,7 @@ static int findInProgram( char *name ) {
 		classTable * ct = progTable.classes+i;
 		// Loop through class symbols
 		for (int j = 0; j < ct->symbolCount; ++j)
-			if (!strcmp(ct->symbols[j].name, name))
+			if (!strcmp(ct->symbols[j].name, name) && ct->symbols[j].dataType == METHOD)
 				return j;
 	}
 

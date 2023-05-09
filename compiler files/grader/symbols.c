@@ -16,24 +16,25 @@ Date Work Commenced: 08/04/23
  *************************************************************************/
 
 #include "symbols.h"
+#include "parser.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 const int MAX_CLASSES = 128; // Maxiumum Classes in a program
 const int MAX_METHODS = 128; // Maxiumum methods in a class
+int MAX_SYMBOLS  = 128;
 
-int MAX_SYMBOLS = 128;
-
-int LOCAL_SEARCH = 1;
 int CLASS_SEARCH = 0;
+int LOCAL_SEARCH = 1;
+int PROG_SEARCH  = 2;
 
-int PROG_SCOPE = 0;
-int CLASS_SCOPE = 1;
+int PROG_SCOPE   = 0;
+int CLASS_SCOPE  = 1;
 int METHOD_SCOPE = 2;
 
-int IS_INIT  = 1;
-int NOT_INIT = 0;
+int IS_INIT      = 1;
+int NOT_INIT     = 0;
 
 // Is the global scope which contains the class level tables
 programTable progTable;
@@ -46,6 +47,8 @@ static void insertToMethod( symbol s );
 // Inserting a class or method into the current scope
 static int findInClass( char *name );
 static int findInMethod( char *name );
+// Only used to find classes or methods at the end of compilation
+static int findInProgram( char *name ); // For searching the program for a method or class
 
 // Get the current method / class
 static classTable *getCurrentClass(); 
@@ -73,6 +76,9 @@ void initTable() {
 
 	// Set the symbolCount and tableCount to 0
 	progTable.classCount = 0;
+
+	progTable.uSymTable = malloc(sizeof(undeclSymbols));
+	progTable.uSymTable->uSymCount = 0;
 }
 
 
@@ -98,6 +104,8 @@ void insertSymbol( symbol s ) {
 // Else return -1
 int findSymbol( char *name, unsigned int flag ) {
 	static int symbolIndex;
+	if (flag == PROG_SEARCH)
+		return findInProgram(name);
 
 	if (scope == PROG_SCOPE) {
 		for (int i = 0; i < progTable.classCount; ++i) {
@@ -174,7 +182,9 @@ void closeTable() {
 			free((progTable.classes+i)->methods); // Free method tables
 	}
 
+
 	free(progTable.classes);
+	free(progTable.uSymTable);
 }
 
 
@@ -317,6 +327,51 @@ void insertTable() {
 
 }
 
+
+void insertUSymbol(Token t) {
+	int i = progTable.uSymTable->uSymCount;
+	progTable.uSymTable->tkns[i] = t;
+	progTable.uSymTable->uSymCount++;
+}
+
+
+ParserInfo undeclSymCheck() {
+	ParserInfo p;
+	p.er = none;
+
+	Token t;
+	int f;
+	for (int i = 0; i < progTable.uSymTable->uSymCount; ++i) {
+		t = progTable.uSymTable->tkns[i];
+		f = findInProgram(t.lx);
+		if (f == -1) {
+			p.er = undecIdentifier;
+			p.tk = t;
+			return p;
+		}
+	}
+
+	return p;
+}
+
+
+/* MAYBE WE ONLY WANT TO SEARCH FOR CLASSES AND METHODS? */ 
+static int findInProgram( char *name ) {
+
+	// Loop through classes
+	for (int i = 0; i < progTable.classCount; ++i) {
+		if (!strcmp(progTable.symbols[i].name, name))
+			return i;
+
+		classTable * ct = progTable.classes+i;
+		// Loop through class symbols
+		for (int j = 0; j < ct->symbolCount; ++j)
+			if (!strcmp(ct->symbols[j].name, name) && ct->symbols[j].dataType == METHOD)
+				return j;
+	}
+
+	return -1;
+}
 
 static classTable *getCurrentClass() {
 	if ( progTable.classCount == 0 || scope == PROG_SCOPE)
