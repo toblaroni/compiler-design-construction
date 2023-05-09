@@ -158,7 +158,6 @@ ParserInfo classVarDecl() {
 
 	// Allocate memory for the variables attributes
 	s.attr = newAttr();
-	s.attr->isInit = NOT_INIT;
 	VarType vType;
 
 	t = GetNextToken();
@@ -172,17 +171,15 @@ ParserInfo classVarDecl() {
 	}
 
 	t = PeekNextToken();
-	char temp[64];
 	s.attr->varType = vType;
 	Kind k = type(&pi);
 	if (pi.er)
 		return pi;
 	s.attr->kind = k;
-	// If the kind == TYPE then store the id of that type
-	if (k == TYPE) {
-		strcpy(temp, t.lx);
-		strcpy(s.attr->typeName, t.lx);
-	}
+
+	// If the kind == TYPE then store the token
+	if (k == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
+		insertUSymbol(t);
 
 	// Expect an identifier
 	pi = expId(&s, &t);
@@ -203,8 +200,6 @@ ParserInfo classVarDecl() {
 		s.dataType = VAR;
 		s.attr = newAttr();
 		s.attr->varType = vType;
-		strcpy(s.attr->typeName, temp);
-		s.attr->isInit = NOT_INIT;
 		s.attr->kind = k;
 
 		pi = expId(&s, &t);
@@ -245,7 +240,6 @@ ParserInfo subroutineDecl( char *parentClass ) {
 	Token t;
 	symbol s;
 	s.attr = newAttr();
-	s.attr->isInit = IS_INIT;
 
 	t = GetNextToken();
 	// Expect constructor, function or method
@@ -270,8 +264,11 @@ ParserInfo subroutineDecl( char *parentClass ) {
 		s.attr->returnType = CHAR;	
 	else if (!strcmp(t.lx, "boolean")) 
 		s.attr->returnType = BOOL;	
-	else if (t.tp == ID) 
+	else if (t.tp == ID) {
 		s.attr->returnType = TYPE;	
+		if (findSymbol(t.lx, PROG_SEARCH) == -1)
+			insertUSymbol(t);
+	}
 	else {
 		error(syntaxError, &pi, t);
 		return pi;
@@ -314,13 +311,12 @@ ParserInfo paramList() {
 	Token t;
 	symbol s;
 	s.attr = newAttr();
-	s.attr->isInit = IS_INIT; // Value passed in when function is called
 
 	// either nothing || 1 or more type id(,)
 	t = PeekNextToken();
 	// Check no params
 	if ( strcmp(t.lx, "int") && strcmp(t.lx, "char") && 
-			strcmp(t.lx, "boolean") && t.tp != ID )
+		 strcmp(t.lx, "boolean") && t.tp != ID )
 		return pi;
 
 	s.dataType = VAR;
@@ -328,6 +324,9 @@ ParserInfo paramList() {
 	s.attr->varType = ARG;
 	if (pi.er)
 		return pi;
+
+	if (s.attr->kind == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
+		insertUSymbol(t);
 
 	pi = expId(&s, &t);
 	if (pi.er)
@@ -343,12 +342,13 @@ ParserInfo paramList() {
 		symbol s;
 		s.dataType = VAR;
 		s.attr = newAttr();
-		s.attr->isInit = IS_INIT;
 
 		s.attr->kind = type(&pi);
 		s.attr->varType = ARG;
 		if (pi.er)
 			return pi;
+		if (s.attr->kind == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
+			insertUSymbol(t);
 
 		pi = expId(&s, &t);
 		if (pi.er)
@@ -427,12 +427,15 @@ ParserInfo varDeclarStmt() {
 		return pi;
 	}
 
+	t = PeekNextToken();
 	s.attr = newAttr();
-	s.attr->isInit = NOT_INIT;
 	Kind k = type(&pi);
 	s.attr->kind = k;
 	if (pi.er)
 		return pi;
+
+	if (k == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
+		insertUSymbol(t);
 
 	pi = expId(&s, &t);
 	if (pi.er)
@@ -449,7 +452,6 @@ ParserInfo varDeclarStmt() {
 		symbol s;
 		s.dataType = VAR;
 		s.attr = newAttr();
-		s.attr->isInit = NOT_INIT;
 		s.attr->kind = k;
 
 		pi = expId(&s, &t);
@@ -674,8 +676,10 @@ ParserInfo subroutineCall() {
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
-	if (findSymbol(t.lx, PROG_SEARCH) == -1)
-		insertUSymbol(t);
+	if (findSymbol(t.lx, LOCAL_SEARCH) == -1) {
+		error(undecIdentifier, &pi, t);
+	}
+
 
 	t = PeekNextToken();
 	if (!strcmp(t.lx, ".")) {

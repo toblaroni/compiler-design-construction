@@ -15,8 +15,6 @@ class Math {
 
     /** Returns the absolute value of x. */
     function int abs(int x) {
-        return;
-        var x = 5;
     }
 
     /** Returns the product of x and y. 

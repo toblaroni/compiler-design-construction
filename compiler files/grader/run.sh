@@ -1,1 +1,1 @@
-gcc -g -Wall -std=c99 parser.c symbols.c lexer.c compiler.c -o compiler && ./compiler $1
+gcc -g -Wall -std=c99 SymbolGrader.c parser.c symbols.c lexer.c compiler.c -o grader && ./grader

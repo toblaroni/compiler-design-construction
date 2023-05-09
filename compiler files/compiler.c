@@ -30,6 +30,18 @@ int InitCompiler() {
 }
 
 ParserInfo compile(char* dir_name) {
+	// Standard libraries
+	static char * stdLibs[8] = { "Array.jack", "Keyboard.jack", "Math.jack", "Memory.jack", 
+								 "Output.jack", "Screen.jack", "String.jack", "Sys.jack" };
+
+	// Parse all of the standard libraries
+	for (int i = 0; i < 8; ++i) {
+		if (InitParser(stdLibs[i])) {
+			Parse();
+			StopParser();
+		}
+	}
+
 	ParserInfo p;
 	p.er = none;
 	static char currentFile[32];
@@ -58,18 +70,19 @@ ParserInfo compile(char* dir_name) {
 		// Concatencate the name of the file at the end of the folder 
 		strcat(currentFile, fileName);
 		if (!InitParser(currentFile))
-			exit(-1);
+			continue;
 
 		p = Parse();
-		if (p.er)
-			break;
+		if (p.er) {
+			closedir(dir);
+			return p;
+		}
 
 		StopParser();
 	}
 
-	// Now we check the final symbol table for undeclared variables
 	p = undeclSymCheck();
-
+	
 	closedir(dir);
 	return p;
 }
@@ -82,28 +95,18 @@ int StopCompiler () {
 void PrintError( ParserInfo pi ) {
 	// Error messages in order of parser info enum
 	static const char* parserMsgs[18] = { "File Successfully compiled with no errors",
-		"lexical error.",
-		"keyword class expected",
-		"identifier expected",
-		"{ expected",
-		"} expected",
+		"lexical error.", "keyword class expected", "identifier expected", "{ expected", "} expected",
 		"class member declaration must begin with static, field, constructor, function, or method",
 		"class variables must begin with field or static",
-		"a type must be int, char, boolean or identifier",
-		"; expected",
+		"a type must be int, char, boolean or identifier", "; expected",
 		"subroutine declaration must begin with constructor, function, or method",
-		"( expected",
-		") expected",
-		"] expected",
-		"= expected",
-		"other syntax error",
+		"( expected", ") expected",
+		"] expected", "= expected", "other syntax error",
 		"undeclared identifier (e.g. class, subroutine or variable",
 		"redeclaration of identifier in the same scope" };
 
 	static const char* lexerMsgs[5] = {"End of file in comment", "New line in string",
 		"End of file in string", "Illegal symbol", "No Lexical errors"};
-
-
 
 	if (!pi.er)
 		printf("%s\n", parserMsgs[pi.er]);
@@ -120,6 +123,7 @@ int main( int argv, char **argc ) {
 		printf("Usage: './compile <folder>'\n");
 		exit(1);
 	}
+
 	InitCompiler();
 	ParserInfo p = compile(argc[1]);
 	PrintError(p);

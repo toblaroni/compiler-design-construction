@@ -427,6 +427,7 @@ ParserInfo varDeclarStmt() {
 		return pi;
 	}
 
+	t = PeekNextToken();
 	s.attr = newAttr();
 	Kind k = type(&pi);
 	s.attr->kind = k;
@@ -675,8 +676,10 @@ ParserInfo subroutineCall() {
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
-	if (findSymbol(t.lx, PROG_SEARCH) == -1)
-		insertUSymbol(t);
+	if (findSymbol(t.lx, LOCAL_SEARCH) == -1) {
+		error(undecIdentifier, &pi, t);
+	}
+
 
 	t = PeekNextToken();
 	if (!strcmp(t.lx, ".")) {

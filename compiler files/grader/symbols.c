@@ -329,6 +329,12 @@ void insertTable() {
 
 
 void insertUSymbol(Token t) {
+	if (!strcmp(t.fl, "Array.jack")   || !strcmp(t.fl, "Keyboard.jack") || 
+		!strcmp(t.fl, "Math.jack")    || !strcmp(t.fl, "Memory.jack")   ||
+		!strcmp(t.fl, "Output.jack")  || !strcmp(t.fl, "Screen.jack")   ||
+		!strcmp(t.fl, "String.jack")  || !strcmp(t.fl, "Sys.jack"))
+		return;
+
 	int i = progTable.uSymTable->uSymCount;
 	progTable.uSymTable->tkns[i] = t;
 	progTable.uSymTable->uSymCount++;

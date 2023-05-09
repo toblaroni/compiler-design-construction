@@ -30,6 +30,18 @@ int InitCompiler() {
 }
 
 ParserInfo compile(char* dir_name) {
+	// Standard libraries
+	static char * stdLibs[8] = { "Array.jack", "Keyboard.jack", "Math.jack", "Memory.jack", 
+								 "Output.jack", "Screen.jack", "String.jack", "Sys.jack" };
+
+	// Parse all of the standard libraries
+	for (int i = 0; i < 8; ++i) {
+		if (!InitParser(stdLibs[i]))
+			printf("Failed to compile standard lib %s\n", stdLibs[i]);
+		Parse();
+		StopParser();
+	}
+
 	ParserInfo p;
 	p.er = none;
 	static char currentFile[32];
@@ -58,7 +70,7 @@ ParserInfo compile(char* dir_name) {
 		// Concatencate the name of the file at the end of the folder 
 		strcat(currentFile, fileName);
 		if (!InitParser(currentFile))
-			exit(-1);
+			continue;
 
 		p = Parse();
 		if (p.er) {
