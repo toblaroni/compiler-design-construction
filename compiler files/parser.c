@@ -676,8 +676,11 @@ ParserInfo subroutineCall() {
 	pi = expId(&s, &t);
 	if (pi.er)
 		return pi;
-	if (findSymbol(t.lx, LOCAL_SEARCH) == -1) {
-		error(undecIdentifier, &pi, t);
+	// First search locally
+	if (findSymbol(t.lx, CLASS_SEARCH) == -1) {
+		if (findSymbol(t.lx, PROG_SEARCH) == -1) {
+			insertUSymbol(t);
+		}
 	}
 
 
