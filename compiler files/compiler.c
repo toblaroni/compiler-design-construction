@@ -67,6 +67,9 @@ ParserInfo compile(char* dir_name) {
 		StopParser();
 	}
 
+	// Now we check the final symbol table for undeclared variables
+	p = undeclSymCheck();
+
 	closedir(dir);
 	return p;
 }

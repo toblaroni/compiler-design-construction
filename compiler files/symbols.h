@@ -16,6 +16,7 @@ extern int NOT_INIT;
 // Search local or search class flags for finding symbols
 extern int LOCAL_SEARCH;
 extern int CLASS_SEARCH;
+extern int PROG_SEARCH;
 
 extern int MAX_SYMBOLS; // Maxumimum symbols in a table
 
@@ -23,7 +24,6 @@ extern int MAX_SYMBOLS; // Maxumimum symbols in a table
 typedef enum { CLASS, VAR, METHOD, BAD_TYPE } Type;
 typedef enum { INTEGER, CHAR, BOOL, TYPE, STR, ARRAY, VOID, CONSTRUCTOR, BAD_KIND } Kind;
 typedef enum { STATIC, FIELD, ARG } VarType;
-
 
 // Structure that holds the attributes of 
 typedef struct {
@@ -44,6 +44,12 @@ typedef struct {
 } symbol;
 
 
+typedef struct {
+  Token tkns[128];
+  unsigned int uSymCount; 
+} undeclSymbols;
+
+
 // Holds a list of symbols and other tables
 // Program table is the top level scope
 // Then class level
@@ -56,6 +62,7 @@ typedef struct methodTable methodTable;
 struct programTable {
   symbol symbols[128]; // For holding class names
   classTable *classes;
+  undeclSymbols *uSymTable;
   unsigned int classCount; // Keep track of what class you're in
 };
 
@@ -73,11 +80,14 @@ struct methodTable {
   unsigned int symbolCount;
 };
 
+
 void initTable();
 void insertSymbol( symbol s ); // Insert takes a symbol and inserts it into the table
+void insertUSymbol( Token );  // Adds undecl symbols to the struct
 int findSymbol( char *name, unsigned int flag );
 symbol * getSymbol( char *name ); // Returns the symbol with that name
 void closeTable();
 void changeScope( unsigned int newScope );
+ParserInfo undeclSymCheck(); // Checks the final table for undecl vars
 
 #endif
