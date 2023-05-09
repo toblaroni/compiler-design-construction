@@ -32,7 +32,8 @@ typedef struct {
   Kind returnType;
   VarType varType;
   short isInit; // Is it initialised
-  char *belongsTo;
+  char belongsTo[64];
+  char typeName[64]; // If kind == TYPE
 } attributes;
 
 
