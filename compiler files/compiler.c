@@ -76,7 +76,6 @@ int StopCompiler () {
 	return 1;
 }
 
-#if 0
 void PrintError( ParserInfo pi ) {
 	// Error messages in order of parser info enum
 	static const char* parserMsgs[18] = { "File Successfully compiled with no errors",
@@ -124,5 +123,4 @@ int main( int argv, char **argc ) {
 	StopCompiler();
 	return 1;
 }
-#endif
 #endif
