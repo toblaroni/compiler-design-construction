@@ -25,13 +25,13 @@ ParserInfo doStmt();
 ParserInfo subroutineCall();
 ParserInfo expressionList();
 ParserInfo returnStmt();
-ParserInfo expression(Token*);
-ParserInfo relationalExpression(Token*);
-ParserInfo arithmeticExpression(Token*);
-ParserInfo term(Token*);
-ParserInfo factor(Token*);
-ParserInfo operand(Token*);
-ParserInfo expId( symbol *sym, Token *tkn ); // For when you expect an identifier.
+ParserInfo expression();
+ParserInfo relationalExpression();
+ParserInfo arithmeticExpression();
+ParserInfo term();
+ParserInfo factor();
+ParserInfo operand();
+ParserInfo expId(symbol*, Token*); // For when you expect an identifier.
 ParserInfo expOParen();	// For when you expect (
 ParserInfo expCParen();	// For when you expect )
 ParserInfo expOBrace();	// For when you expect {
@@ -91,6 +91,7 @@ ParserInfo classDecl() {
 	// We want to create a new symbol with the of the class
 	// We also want to see if the class name already exists
 	symbol s;
+	s.attr = newAttr();
 	s.dataType = CLASS;
 	pi = expId( &s, &t );
 	if (pi.er)
@@ -490,22 +491,15 @@ ParserInfo letStmt() {
 		return pi;
 	}
 
-	// We need to know the type of the symbol on the LHS
-	// Get the symbol's kind
-	symbol *lhs	= getSymbol(t.lx);
-
 	// 0 Or 1 [ expression ]
 	// Expression should result in an integer
 	t = PeekNextToken();
 	if (!strcmp(t.lx, "[")) {
 		GetNextToken(); // consume the token
 
-		pi = expression(&t);
+		pi = expression();
 		if (pi.er)
 			return pi;
-		if (t.tp != INT) {
-			error(syntaxError, &pi, t);
-		}
 
 		// Closing ]
 		t = GetNextToken();
@@ -525,8 +519,7 @@ ParserInfo letStmt() {
 		return pi;
 	}
 
-	// Check that the type(LHS) == type(RHS)
-	pi = expression(&t);
+	pi = expression();
 	if (pi.er)
 		return pi;
 
@@ -551,7 +544,7 @@ ParserInfo ifStmt() {
 	if (pi.er)
 		return pi;
 
-	pi = expression(&t);
+	pi = expression();
 	if (pi.er)
 		return pi;
 
@@ -623,7 +616,7 @@ ParserInfo whileStmt() {
 	if (pi.er)
 		return pi;
 
-	pi = expression(&t);
+	pi = expression();
 	if (pi.er)
 		return pi;
 
@@ -721,7 +714,7 @@ ParserInfo expressionList() {
 		 t.tp != ID && t.tp != STRING )
 		return pi;
 
-	pi = expression(&t);
+	pi = expression();
 	if (pi.er)
 		return pi;
 
@@ -729,7 +722,7 @@ ParserInfo expressionList() {
 	while (!strcmp(t.lx, ",")) {
 		GetNextToken();
 
-		pi = expression(&t);
+		pi = expression();
 		if (pi.er)
 			return pi;
 
@@ -758,7 +751,7 @@ ParserInfo returnStmt() {
 		 !strcmp(t.lx, "(")     || !strcmp(t.lx, "true") ||
 		 !strcmp(t.lx, "false") || !strcmp(t.lx, "null") ||
 		 !strcmp(t.lx, "this")  || t.tp == INT || t.tp == ID || t.tp == STRING ) {
-		pi = expression(&t);
+		pi = expression();
 		if (pi.er)
 			return pi;
 	}
@@ -776,12 +769,12 @@ ParserInfo returnStmt() {
 }
 
 
-ParserInfo expression(Token * tkn) {
+ParserInfo expression() {
 	ParserInfo pi = newParserInfo();
 	Token t;
 
 	// Relational expression
-	pi = relationalExpression(tkn);
+	pi = relationalExpression();
 	if (pi.er)
 		return pi;
 
@@ -789,7 +782,7 @@ ParserInfo expression(Token * tkn) {
 	t = PeekNextToken();
 	while ( !strcmp(t.lx, "&") || !strcmp(t.lx, "|") ) {
 		GetNextToken(); // Consume the token
-		pi = relationalExpression(tkn);
+		pi = relationalExpression();
 		if (pi.er)
 			return pi;
 
@@ -800,12 +793,12 @@ ParserInfo expression(Token * tkn) {
 }
 
 
-ParserInfo relationalExpression(Token * tkn) {
+ParserInfo relationalExpression() {
 	ParserInfo pi = newParserInfo();
 	Token t;
 
 	// Arithmetic expression
-	pi = arithmeticExpression(tkn);
+	pi = arithmeticExpression();
 	if (pi.er)
 		return pi;
 
@@ -814,7 +807,7 @@ ParserInfo relationalExpression(Token * tkn) {
 	while ( !strcmp(t.lx, "=") || !strcmp(t.lx, ">") || !strcmp(t.lx, "<") ) {
 		GetNextToken(); // consume the token
 	
-		pi = arithmeticExpression(tkn);
+		pi = arithmeticExpression();
 		if (pi.er)
 			return pi;
 
@@ -825,12 +818,12 @@ ParserInfo relationalExpression(Token * tkn) {
 }
 
 
-ParserInfo arithmeticExpression(Token * tkn) {
+ParserInfo arithmeticExpression() {
 	ParserInfo pi = newParserInfo();
 	Token t;
 
 	// Term
-	pi = term(tkn);
+	pi = term();
 	if (pi.er)
 		return pi;
 
@@ -838,7 +831,7 @@ ParserInfo arithmeticExpression(Token * tkn) {
 	t = PeekNextToken();
 	while ( !strcmp(t.lx, "-") || !strcmp(t.lx, "+") ) {
 		GetNextToken(); // Consume token
-		pi = term(tkn);
+		pi = term();
 		if (pi.er)
 			return pi;
 
@@ -849,11 +842,11 @@ ParserInfo arithmeticExpression(Token * tkn) {
 }
 
 
-ParserInfo term(Token * tkn) {
+ParserInfo term() {
 	ParserInfo pi = newParserInfo();
 	Token t;
 
-	pi = factor(tkn);
+	pi = factor();
 	if (pi.er)
 		return pi;
 
@@ -862,7 +855,7 @@ ParserInfo term(Token * tkn) {
 	while ( !strcmp(t.lx, "*") || !strcmp(t.lx, "/") ) {
 		GetNextToken();
 
-		pi = factor(tkn);
+		pi = factor();
 		if (pi.er)
 			return pi;
 
@@ -872,7 +865,7 @@ ParserInfo term(Token * tkn) {
 	return pi;
 }
 
-ParserInfo factor(Token * tkn) {
+ParserInfo factor() {
 	ParserInfo pi = newParserInfo();
 	Token t;
 
@@ -882,17 +875,16 @@ ParserInfo factor(Token * tkn) {
 		GetNextToken(); // Consume the token
 
 	// Exp operand
-	pi = operand(tkn);
+	pi = operand();
 	return pi;
 }
 
 
-ParserInfo operand(Token * tkn) {
+ParserInfo operand() {
 	ParserInfo pi = newParserInfo();
 	Token t;
 
 	t = GetNextToken();
-	*tkn = t;
 	if (t.tp == INT)
 		return pi; // Integer constant
 
@@ -917,7 +909,7 @@ ParserInfo operand(Token * tkn) {
 		if (!strcmp(t.lx, "[")) {
 			GetNextToken(); // Consume token
 							
-			pi = expression(tkn);
+			pi = expression();
 			if (pi.er)
 				return pi;
 			
@@ -931,7 +923,7 @@ ParserInfo operand(Token * tkn) {
 		} else if (!strcmp(t.lx, "(")) {
 			GetNextToken();
 
-			pi = expressionList(tkn);
+			pi = expressionList();
 			if (pi.er)
 				return pi;
 
@@ -943,7 +935,7 @@ ParserInfo operand(Token * tkn) {
 	}
 
 	if (!strcmp(t.lx, "(")) {
-		pi = expression(tkn);
+		pi = expression();
 		if (pi.er)
 			return pi;
 

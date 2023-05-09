@@ -30,12 +30,15 @@ unsigned int scope;
 // Inserting symbols into class level scope or method level scope
 static void insertToClass( symbol s );
 static void insertToMethod( symbol s );
+
 // Inserting a class or method into the current scope
 static int findInClass( char *name );
 static int findInMethod( char *name );
+
 // Get the current method / class
 static classTable *getCurrentClass(); 
 static methodTable *getCurrentMethod(); 
+
 // Allocating memory for the new table and changing the program scope
 static void insertTable();
 
@@ -57,7 +60,7 @@ void initTable() {
 		progTable.symbols[i].attr = NULL;
 
 	// Set the symbolCount and tableCount to 0
-	progTable.classCount  = 0;
+	progTable.classCount = 0;
 }
 
 
@@ -155,7 +158,8 @@ void closeTable() {
 	
 	// loop through all classes
 	for (int i = 0; i < progTable.classCount; ++i) { 
-		free((progTable.classes + i)->methods); // Free method tables
+		if ((progTable.classes+i)->methodCount > 0)
+			free((progTable.classes+i)->methods); // Free method tables
 	}
 
 	free(progTable.classes);
@@ -292,7 +296,6 @@ void insertTable() {
 	// Allocate
 	this.attr = malloc(sizeof(attributes));
 	this.name = malloc(strlen("this")+1);
-	this.attr->belongsTo = malloc(sizeof(progTable.symbols[progTable.classCount].name)+1);
 
 	strcpy(this.name, "this");
 	strcpy(this.attr->belongsTo, progTable.symbols[progTable.classCount-1].name);

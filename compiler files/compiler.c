@@ -57,7 +57,6 @@ ParserInfo compile(char* dir_name) {
 
 		// Concatencate the name of the file at the end of the folder 
 		strcat(currentFile, fileName);
-		printf("Parsing %s\n", currentFile);
 		if (!InitParser(currentFile))
 			exit(-1);
 
@@ -66,7 +65,6 @@ ParserInfo compile(char* dir_name) {
 			break;
 
 		StopParser();
-		printf("Successfully parsed %s.\n", currentFile);
 	}
 
 	closedir(dir);
@@ -78,6 +76,7 @@ int StopCompiler () {
 	return 1;
 }
 
+#if 0
 void PrintError( ParserInfo pi ) {
 	// Error messages in order of parser info enum
 	static const char* parserMsgs[18] = { "File Successfully compiled with no errors",
@@ -112,7 +111,7 @@ void PrintError( ParserInfo pi ) {
 	else 
 		printf("Error while parsing %s. line %i, close to %s, %s.\n", pi.tk.fl, pi.tk.ln, pi.tk.lx, parserMsgs[pi.er]);
 }
-
+#endif
 
 #ifndef TEST_COMPILER
 int main( int argv, char **argc ) {
@@ -127,3 +126,4 @@ int main( int argv, char **argc ) {
 	return 1;
 }
 #endif
+
