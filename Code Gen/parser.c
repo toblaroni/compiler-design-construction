@@ -58,8 +58,16 @@ ParserInfo addSymbol(symbol s, Token t) {
 		error(redecIdentifier, &pi, t);
 		return pi;
 	}
+
 	// Set the name of the symbol to the lexeme of the token
 	strcpy(s.name, t.lx);
+
+	// Get the index of the symbol type
+	if (s.dataType == VAR) {
+		s.index = indexOf( s.attr->varType );
+		printf("%s has an index of %i\n", s.name, s.index);	
+	}
+
 	insertSymbol(s);
 	return pi;
 }
@@ -324,6 +332,7 @@ ParserInfo paramList( SubType sType, char *parentClass ) {
 		this.name = malloc(strlen("this")+1);
 		this.dataType = VAR;
 		this.attr->varType = ARG;
+		this.index = 0;
 
 		strcpy(t.lx, "this");
 		strcpy(this.attr->belongsTo, parentClass);

@@ -143,7 +143,7 @@ void closeTable() {
 	// ALSO NEED TO FREE SYMBOL NAMES IF ALLOCATED
 	// ALso have to loop through all symbols freeing the attributes
 	for (int i = 0; i < progTable.classCount; ++i) {
-		printf("Now freeing the %s table\n", progTable.symbols[i].name);
+		// printf("Now freeing the %s table\n", progTable.symbols[i].name);
 		classTable *cClass = progTable.classes + i;
 
 		// printf("Freeing from %s\n", progTable.symbols[i].name);
@@ -154,7 +154,7 @@ void closeTable() {
 			// Free method level symbol attributes
 			for (int k = 0; k < cMethod->symbolCount; ++k) {
 				if (cMethod->symbols[k].attr != NULL) {
-					printf("Now freeing method symbol %s\n", cMethod->symbols[k].name);
+					// printf("Now freeing method symbol %s\n", cMethod->symbols[k].name);
 					free( cMethod->symbols[k].attr );
 				}
 			}
@@ -251,17 +251,7 @@ static void insertToMethod( symbol s ) {
 
 
 symbol * getSymbol( char *name ) {
-	int i;
-	if (scope == METHOD_SCOPE) {
-		i = findInMethod(name);
-		if (i != -1)
-			return &getCurrentMethod()->symbols[i];
-	}
 
-	// Class scope 
-	i = findInClass(name);
-	if (i != -1)
-		return &getCurrentClass()->symbols[i];
 
 	return NULL;
 }
@@ -348,7 +338,6 @@ ParserInfo undeclSymCheck() {
 }
 
 
-/* MAYBE WE ONLY WANT TO SEARCH FOR CLASSES AND METHODS? */ 
 static int findInProgram( char *name ) {
 
 	// Loop through classes
@@ -364,6 +353,34 @@ static int findInProgram( char *name ) {
 	}
 
 	return -1;
+}
+
+
+/*
+ * We want to find the index of that varType
+ * AKA - How many of that vartype are there?
+ * In the current class. 
+ */
+unsigned int indexOf( VarType vType ) {
+	unsigned int count = 0;
+
+	// If vType == ARG search the current method
+	if (vType == ARG) {
+		methodTable * cMethod = getCurrentMethod();
+		for (int i = 0; i < cMethod->symbolCount; ++i) {
+			if (cMethod->symbols[i].attr->varType == vType)
+				count++;
+		}
+		return count;
+	}
+
+	// Else we search through the class symbols
+	classTable * cClass = getCurrentClass();
+	for (int i = 0; i < cClass->symbolCount; ++i) {
+		if (cClass->symbols[i].attr->varType == vType)
+			count++;
+	}
+	return count;
 }
 
 static classTable *getCurrentClass() {

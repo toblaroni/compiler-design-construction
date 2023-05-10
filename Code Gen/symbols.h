@@ -22,7 +22,7 @@ extern int MAX_SYMBOLS; // Maxumimum symbols in a table
 
 // define your own types and function prototypes for the symbol table(s) module below
 typedef enum { CLASS, VAR, SUB, BAD_TYPE } Type;
-typedef enum { INTEGER, CHAR, BOOL, TYPE, STR, ARRAY, VOID, BAD_KIND } Kind;
+typedef enum { INTEGER, CHAR, BOOL, TYPE, VOID, BAD_KIND } Kind;
 typedef enum { CONSTRUCTOR, METHOD, FUNCTION } SubType;
 typedef enum { STATIC, FIELD, ARG } VarType;
 
@@ -40,6 +40,7 @@ typedef struct {
 typedef struct {
   char *name;
   Type dataType;
+  unsigned int index;  // Index of symbol in its respected memory segment
   attributes *attr; // Attributes ( Pointer to further data about the symbol )
 } symbol;
 
@@ -89,5 +90,6 @@ symbol * getSymbol( char *name ); // Returns the symbol with that name
 void closeTable();
 void changeScope( unsigned int newScope );
 ParserInfo undeclSymCheck(); // Checks the final table for undecl vars
+unsigned int indexOf( VarType );
 
 #endif
