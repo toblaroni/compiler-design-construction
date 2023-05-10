@@ -677,10 +677,8 @@ ParserInfo subroutineCall() {
 	if (pi.er)
 		return pi;
 	// First search locally
-	if (findSymbol(t.lx, CLASS_SEARCH) == -1) {
-		if (findSymbol(t.lx, PROG_SEARCH) == -1) {
-			insertUSymbol(t);
-		}
+	if (findSymbol(t.lx, CLASS_SEARCH) == -1 && findSymbol(t.lx, PROG_SEARCH) == -1) {
+		insertUSymbol(t);
 	}
 
 

@@ -3,6 +3,6 @@
 class Test {
     field int x;
     method void foo() {
-        let x = true;
+        let x = 5;
     }
 }

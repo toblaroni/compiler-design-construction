@@ -21,8 +21,9 @@ extern int PROG_SEARCH;
 extern int MAX_SYMBOLS; // Maxumimum symbols in a table
 
 // define your own types and function prototypes for the symbol table(s) module below
-typedef enum { CLASS, VAR, METHOD, BAD_TYPE } Type;
-typedef enum { INTEGER, CHAR, BOOL, TYPE, STR, ARRAY, VOID, CONSTRUCTOR, BAD_KIND } Kind;
+typedef enum { CLASS, VAR, SUB, BAD_TYPE } Type;
+typedef enum { INTEGER, CHAR, BOOL, TYPE, STR, ARRAY, VOID, BAD_KIND } Kind;
+typedef enum { CONSTRUCTOR, METHOD, FUNCTION } SubType;
 typedef enum { STATIC, FIELD, ARG } VarType;
 
 // Structure that holds the attributes of 
@@ -30,6 +31,7 @@ typedef struct {
   unsigned int size; 
   Kind kind;
   Kind returnType;
+  SubType subType;
   VarType varType;
   char belongsTo[32];
 } attributes;

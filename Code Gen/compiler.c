@@ -34,15 +34,18 @@ ParserInfo compile(char* dir_name) {
 	static char * stdLibs[8] = { "Array.jack", "Keyboard.jack", "Math.jack", "Memory.jack", 
 								 "Output.jack", "Screen.jack", "String.jack", "Sys.jack" };
 
+	ParserInfo p;
 	// Parse all of the standard libraries
 	for (int i = 0; i < 8; ++i) {
-		if (!InitParser(stdLibs[i]))
-			printf("Failed to compile standard lib %s\n", stdLibs[i]);
-		Parse();
+		if (!InitParser(stdLibs[i])) {
+			printf("Error initialising standard lib %s\n", stdLibs[i]);
+			exit(-1);
+		}
+		p = Parse();
+		if (p.er) return p;
 		StopParser();
 	}
 
-	ParserInfo p;
 	p.er = none;
 	static char currentFile[32];
 
@@ -91,3 +94,43 @@ int StopCompiler () {
 	closeTable();
 	return 1;
 }
+
+void PrintError( ParserInfo pi ) {
+	// Error messages in order of parser info enum
+	static const char* parserMsgs[18] = { "File Successfully compiled with no errors",
+		"lexical error.", "keyword class expected", "identifier expected", "{ expected", "} expected",
+		"class member declaration must begin with static, field, constructor, function, or method",
+		"class variables must begin with field or static",
+		"a type must be int, char, boolean or identifier", "; expected",
+		"subroutine declaration must begin with constructor, function, or method",
+		"( expected", ") expected",
+		"] expected", "= expected", "other syntax error",
+		"undeclared identifier (e.g. class, subroutine or variable",
+		"redeclaration of identifier in the same scope" };
+
+	static const char* lexerMsgs[5] = {"End of file in comment", "New line in string",
+		"End of file in string", "Illegal symbol", "No Lexical errors"};
+
+	if (!pi.er)
+		printf("%s\n", parserMsgs[pi.er]);
+	else if (pi.tk.tp == ERR) 
+		printf("Lexical error while compiling %s. %s. %s at line %i\n", pi.tk.fl, lexerMsgs[pi.tk.ec],
+				pi.tk.lx, pi.tk.ln);
+	else 
+		printf("Error while parsing %s. line %i, close to %s, %s.\n", pi.tk.fl, pi.tk.ln, pi.tk.lx, parserMsgs[pi.er]);
+}
+
+#ifndef TEST_COMPILER
+int main( int argv, char **argc ) {
+	if (argv != 2) {
+		printf("Usage: './compile <folder>'\n");
+		exit(1);
+	}
+
+	InitCompiler();
+	ParserInfo p = compile(argc[1]);
+	PrintError(p);
+	StopCompiler();
+	return 1;
+}
+#endif

@@ -14,7 +14,7 @@ ParserInfo memberDecl( char *parentClass );
 ParserInfo classVarDecl();
 Kind type( ParserInfo *pi );
 ParserInfo subroutineDecl( char *parentClass );
-ParserInfo paramList();
+ParserInfo paramList( SubType, char* );
 ParserInfo subroutineBody();
 ParserInfo statement();
 ParserInfo varDeclarStmt();
@@ -240,15 +240,17 @@ ParserInfo subroutineDecl( char *parentClass ) {
 	Token t;
 	symbol s;
 	s.attr = newAttr();
+	s.dataType = SUB;
 
 	t = GetNextToken();
 	// Expect constructor, function or method
-	if (!strcmp(t.lx, "constructor")) {
-		s.dataType   = METHOD;
-		s.attr->kind = CONSTRUCTOR;
-	} else if (!strcmp(t.lx, "function") || !strcmp(t.lx, "method")) {
-		s.dataType = METHOD;  // We groovin' 
-	} else {
+	if (!strcmp(t.lx, "constructor"))
+		s.attr->subType = CONSTRUCTOR;
+	else if (!strcmp(t.lx, "function"))
+		s.attr->subType = FUNCTION;  // We groovin' 
+	else if (!strcmp(t.lx, "method"))
+		s.attr->subType = METHOD;
+	else {
 		error(subroutineDeclarErr, &pi, t);
 		return pi;
 	}
@@ -279,7 +281,7 @@ ParserInfo subroutineDecl( char *parentClass ) {
 	if (pi.er)
 		return pi;
 	// Check that the constructor is called "new" 
-	if (s.attr->kind == CONSTRUCTOR && strcmp("new", t.lx)) {
+	if (s.attr->subType == CONSTRUCTOR && strcmp("new", t.lx)) {
 		error(syntaxError, &pi, t);
 		return pi;
 	}
@@ -292,7 +294,7 @@ ParserInfo subroutineDecl( char *parentClass ) {
 	if (pi.er)
 		return pi;
 
-	pi = paramList();
+	pi = paramList(s.attr->subType, parentClass);
 	if (pi.er)
 		return pi;
 
@@ -306,14 +308,30 @@ ParserInfo subroutineDecl( char *parentClass ) {
 }
 
 
-ParserInfo paramList() {
+ParserInfo paramList( SubType sType, char *parentClass ) {
 	ParserInfo pi = newParserInfo();
 	Token t;
 	symbol s;
 	s.attr = newAttr();
 
-	// either nothing || 1 or more type id(,)
+	// ADD THE 'THIS' SYMBOL AS THE FIRST ARGUMENT IF 
+	// SUBROUTINE IS A METHOD
+	if (sType == METHOD) {
+		symbol this;	
+
+		// Allocate
+		this.attr = malloc(sizeof(attributes));
+		this.name = malloc(strlen("this")+1);
+		this.dataType = VAR;
+		this.attr->varType = ARG;
+
+		strcpy(t.lx, "this");
+		strcpy(this.attr->belongsTo, parentClass);
+		addSymbol(s, t);
+	}
+
 	t = PeekNextToken();
+	// either nothing || 1 or more type id(,)
 	// Check no params
 	if ( strcmp(t.lx, "int") && strcmp(t.lx, "char") && 
 		 strcmp(t.lx, "boolean") && t.tp != ID )

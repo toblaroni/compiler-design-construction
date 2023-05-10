@@ -55,7 +55,7 @@ static classTable *getCurrentClass();
 static methodTable *getCurrentMethod(); 
 
 // Allocating memory for the new table and changing the program scope
-static void insertTable();
+static void insertTable(symbol s);
 
 // Initialise the program table.
 void initTable() {
@@ -94,8 +94,8 @@ void insertSymbol( symbol s ) {
 
 	// Checking to see if the symbol is a class or a method
 	// If so allocate memory for the table and change the scope of the program
-	if ( s.dataType == CLASS || s.dataType == METHOD )
-		insertTable();
+	if ( s.dataType == CLASS || s.dataType == SUB )
+		insertTable(s);
 }
 
 
@@ -143,6 +143,7 @@ void closeTable() {
 	// ALSO NEED TO FREE SYMBOL NAMES IF ALLOCATED
 	// ALso have to loop through all symbols freeing the attributes
 	for (int i = 0; i < progTable.classCount; ++i) {
+		printf("Now freeing the %s table\n", progTable.symbols[i].name);
 		classTable *cClass = progTable.classes + i;
 
 		// printf("Freeing from %s\n", progTable.symbols[i].name);
@@ -153,7 +154,7 @@ void closeTable() {
 			// Free method level symbol attributes
 			for (int k = 0; k < cMethod->symbolCount; ++k) {
 				if (cMethod->symbols[k].attr != NULL) {
-					// printf( "Freeing %s\n", cMethod->symbols[k].name );
+					printf("Now freeing method symbol %s\n", cMethod->symbols[k].name);
 					free( cMethod->symbols[k].attr );
 				}
 			}
@@ -267,7 +268,7 @@ symbol * getSymbol( char *name ) {
 
 
 // Inserting a table into existing tables
-void insertTable() {
+void insertTable( symbol s ) {
 	classTable *currentClass;
 	methodTable *currentMethod;
 
@@ -311,20 +312,6 @@ void insertTable() {
 	// Set all the symbol attributes to null
 	for ( int i = 0; i < MAX_SYMBOLS; ++i )
 		currentMethod->symbols[i].attr = NULL;
-
-	// Set the first symbol of the method table to 'this'
-	symbol this;	
-
-	// Allocate
-	this.attr = malloc(sizeof(attributes));
-	this.name = malloc(strlen("this")+1);
-
-	strcpy(this.name, "this");
-	strcpy(this.attr->belongsTo, progTable.symbols[progTable.classCount-1].name);
-
-	currentMethod->symbols[0] = this;
-	currentMethod->symbolCount ++;
-
 }
 
 
