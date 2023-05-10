@@ -327,7 +327,7 @@ ParserInfo paramList( SubType sType, char *parentClass ) {
 
 		strcpy(t.lx, "this");
 		strcpy(this.attr->belongsTo, parentClass);
-		addSymbol(s, t);
+		addSymbol(this, t);
 	}
 
 	t = PeekNextToken();
