@@ -8,6 +8,8 @@
 #include "compiler.h"
 
 FILE * fileOut;
+char currentClass[30];
+char currentMethod[30];
 
 // Function Prototypes
 void error(SyntaxErrors e, ParserInfo *pi, Token t);
@@ -54,17 +56,17 @@ ParserInfo newParserInfo() {
 // Adding a symbol to the table
 ParserInfo addSymbol(symbol s, Token t) {
 	ParserInfo pi = newParserInfo();
+	if (parseNum) return pi;
 
 	// Check the name hasn't already been taken
 	// Search the current scope (METHOD or CLASS)
-	if ( findSymbol(t.lx, LOCAL_SEARCH) != -1 ) {
+	if ( findSymbol(t.lx, LOCAL_SEARCH) != -1) {
 		error(redecIdentifier, &pi, t);
 		return pi;
 	}
 
 	// Set the name of the symbol to the lexeme of the token
 	strcpy(s.name, t.lx);
-
 	// Get the index of the symbol type
 	if (s.dataType == VAR)
 		s.index = indexOf( s.attr->varType );
@@ -93,6 +95,7 @@ int InitParser (char* file_name) {
 
 
 ParserInfo Parse () {
+	printf("Parsing %i\n", parseNum);
 	return classDecl();
 }
 
@@ -109,7 +112,6 @@ ParserInfo classDecl() {
 		error(classExpected, &pi, t);
 		return pi;
 	}
-
 	// Expect class id 
 	// We want to create a new symbol with the of the class
 	// We also want to see if the class name already exists
@@ -122,6 +124,7 @@ ParserInfo classDecl() {
 
 	char className[64];
 	strcpy(className, t.lx);
+	strcpy(currentClass, t.lx);
 	// Add class to the symbol table
 	pi = addSymbol(s, t);
 	if (pi.er)
@@ -131,6 +134,8 @@ ParserInfo classDecl() {
 	pi = expOBrace();
 	if (pi.er)
 		return pi;
+
+	changeScope(CLASS_SCOPE);
 
 	// Expect 0 or more member declarations
 	t = PeekNextToken();
@@ -201,8 +206,10 @@ ParserInfo classVarDecl() {
 	s.attr->kind = k;
 
 	// If the kind == TYPE then store the token
-	if (k == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
-		insertUSymbol(t);
+	if (k == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1 && parseNum) {
+		error(undecIdentifier, &pi, t);
+		return pi;
+	}
 
 	// Expect an identifier
 	pi = expId(&s, &t);
@@ -291,8 +298,10 @@ ParserInfo subroutineDecl( char *parentClass ) {
 		s.attr->returnType = BOOL;	
 	else if (t.tp == ID) {
 		s.attr->returnType = TYPE;	
-		if (findSymbol(t.lx, PROG_SEARCH) == -1)
-			insertUSymbol(t);
+		if (findSymbol(t.lx, PROG_SEARCH) == -1 && parseNum) {
+			error(undecIdentifier, &pi, t);
+			return pi;
+		}
 	}
 	else {
 		error(syntaxError, &pi, t);
@@ -312,6 +321,19 @@ ParserInfo subroutineDecl( char *parentClass ) {
 	pi = addSymbol(s, t); // If it's all gravy add to the table 
 	if (pi.er)
 		return pi;
+	strcpy(currentMethod, t.lx);	
+
+	// If it's the second time parsing
+	if (parseNum) {
+		char name[30] = "";
+		strcat(name, parentClass);
+		strcat(name, ".");
+		strcat(name, s.name);
+
+		writeFunc(fileOut, name, getNLocals(parentClass, t.lx));
+	}
+
+	changeScope(METHOD_SCOPE);
 
 	pi = expOParen();
 	if (pi.er)
@@ -367,8 +389,10 @@ ParserInfo paramList( SubType sType, char *parentClass ) {
 	if (pi.er)
 		return pi;
 
-	if (s.attr->kind == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
-		insertUSymbol(t);
+	if (s.attr->kind == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1 && parseNum) {
+		error(undecIdentifier, &pi, t);
+		return pi;
+	}
 
 	pi = expId(&s, &t);
 	if (pi.er)
@@ -389,8 +413,10 @@ ParserInfo paramList( SubType sType, char *parentClass ) {
 		s.attr->varType = ARG;
 		if (pi.er)
 			return pi;
-		if (s.attr->kind == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
-			insertUSymbol(t);
+		if (s.attr->kind == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1 && parseNum) {
+			error(undecIdentifier, &pi, t);
+			return pi;
+		}
 
 		pi = expId(&s, &t);
 		if (pi.er)
@@ -476,8 +502,10 @@ ParserInfo varDeclarStmt() {
 	if (pi.er)
 		return pi;
 
-	if (k == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1)
-		insertUSymbol(t);
+	if (k == TYPE && findSymbol(t.lx, PROG_SEARCH) == -1 && parseNum) {
+		error(undecIdentifier, &pi, t);
+		return pi;
+	}
 
 	pi = expId(&s, &t);
 	if (pi.er)
@@ -529,7 +557,7 @@ ParserInfo letStmt() {
 	if (pi.er)
 		return pi;
 	// Make sure the symbol exists in the current class
-	int f = findSymbol(t.lx, CLASS_SEARCH);
+	int f = findSymbolInClass(currentClass, currentMethod, t.lx);
 	if (f == -1) {
 		error(undecIdentifier, &pi, t);
 		return pi;
@@ -719,9 +747,10 @@ ParserInfo subroutineCall() {
 	if (pi.er)
 		return pi;
 	// First search locally
-	if (findSymbol(t.lx, CLASS_SEARCH) == -1) {
+	if (findSymbolInClass(currentClass, currentMethod, t.lx) == -1 && parseNum) {
 		if (findSymbol(t.lx, PROG_SEARCH) == -1) {
-			insertUSymbol(t);
+			error(undecIdentifier, &pi, t);
+			return pi;
 		}
 	}
 
@@ -734,8 +763,10 @@ ParserInfo subroutineCall() {
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
-		if (findSymbol(t.lx, PROG_SEARCH) == -1)
-			insertUSymbol(t);
+		if (findSymbol(t.lx, PROG_SEARCH) == -1 && parseNum) {
+			error(undecIdentifier, &pi, t);
+			return pi;
+		}
 	}
 
 	pi = expOParen();
@@ -944,9 +975,11 @@ ParserInfo operand() {
 	if (t.tp == ID) {
 
 		// CHECK THAT THE SYMBOL EXISTS
-		if (findSymbol(t.lx, PROG_SCOPE) == -1) {
+		if (findSymbol(t.lx, PROG_SEARCH) == -1 && 
+			findSymbolInClass(currentClass, currentMethod, t.lx) == -1 && parseNum) {
 			// Add to the undeclared symbol table
-			insertUSymbol(t);
+			error(undecIdentifier, &pi, t);
+			return pi;
 		}
 
 		t = PeekNextToken();
@@ -954,8 +987,10 @@ ParserInfo operand() {
 			GetNextToken(); // consume token
 			t = GetNextToken();
 			if (t.tp == ID) {
-				if (findSymbol(t.lx, PROG_SCOPE) == -1)
-					insertUSymbol(t);
+				if (findSymbol(t.lx, PROG_SEARCH) == -1 && parseNum) {
+					error(undecIdentifier, &pi, t);
+					return pi;
+				}
 			}
 			else {
 				error(idExpected, &pi, t);

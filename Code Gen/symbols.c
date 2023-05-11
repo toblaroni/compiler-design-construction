@@ -18,23 +18,25 @@ Date Work Commenced: 08/04/23
 #include "symbols.h"
 #include "parser.h"
 #include <string.h>
+#include "compiler.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 const int MAX_CLASSES = 128; // Maxiumum Classes in a program
 const int MAX_METHODS = 128; // Maxiumum methods in a class
+int parseNum;
 int MAX_SYMBOLS  = 128;
 
 int CLASS_SEARCH = 0;
 int LOCAL_SEARCH = 1;
 int PROG_SEARCH  = 2;
 
-int PROG_SCOPE   = 0;
-int CLASS_SCOPE  = 1;
-int METHOD_SCOPE = 2;
+int PROG_SCOPE   = 3;
+int CLASS_SCOPE  = 4;
+int METHOD_SCOPE = 5;
 
-int IS_INIT      = 1;
-int NOT_INIT     = 0;
+int IS_INIT      = 6;
+int NOT_INIT     = 7;
 
 // Is the global scope which contains the class level tables
 programTable progTable;
@@ -76,6 +78,7 @@ void initTable() {
 
 	// Set the symbolCount and tableCount to 0
 	progTable.classCount = 0;
+	progTable.classIndex = 0;
 
 	progTable.uSymTable = malloc(sizeof(undeclSymbols));
 	progTable.uSymTable->uSymCount = 0;
@@ -382,6 +385,72 @@ unsigned int indexOf( VarType vType ) {
 	}
 	return count;
 }
+
+
+classTable * getClass(char *name) {
+	for (int i = 0; i < progTable.classCount; i++) {
+		if (!strcmp(progTable.symbols[i].name, name))
+			return (progTable.classes+i);
+	}
+	return NULL;
+}
+
+methodTable * getMethod ( classTable* parent, char *name) {
+	int mIndex = 0;
+	for (int i = 0; i < parent->symbolCount; ++i) {
+		if (parent->symbols[i].dataType != SUB)
+			continue;
+		if (strcmp(parent->symbols[i].name, name)) {
+			mIndex ++;
+			continue;
+		}
+		return (parent->methods+mIndex);
+		
+	}
+	return NULL;
+}
+
+int findSymbolInClass(char *parentClass, char *method, char *symbol) {
+	classTable * c = getClass(parentClass);
+
+	// Loop through the symbols of c looking for symbol
+	for (int i = 0; i < c->symbolCount; ++i) {
+		if (!strcmp(c->symbols[i].name, symbol))
+			return i;
+	}
+
+	// Check the method table if there is one
+	methodTable * m = getMethod(c, method);
+	if (m != NULL) {
+		for (int i = 0; i < m->symbolCount; ++i) {
+			if (!strcmp(m->symbols[i].name, symbol))
+				return i;
+		}
+	}
+
+	return -1;
+}
+
+unsigned int getNLocals(char *pName, char *name) {
+	static unsigned int count = 0;
+	classTable * c = getClass(pName);
+	methodTable * m = getMethod(c, name);
+
+	// Loop through symbols counting the number of non arg symbols
+	for (int i = 0; i < m->symbolCount; i++) {
+		if (m->symbols[i].attr->varType != ARG)
+			count++;
+	}
+	
+	return count;	
+}
+
+unsigned int getArgc(char *pName, char *name) {
+	static unsigned int count = 0;
+	// Loop through all 
+	return count;
+}
+
 
 static classTable *getCurrentClass() {
 	if ( progTable.classCount == 0 || scope == PROG_SCOPE)

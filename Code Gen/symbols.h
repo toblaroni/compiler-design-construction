@@ -64,6 +64,7 @@ struct programTable {
   symbol symbols[128]; // For holding class names
   classTable *classes;
   undeclSymbols *uSymTable;
+  unsigned int classIndex;
   unsigned int classCount; // Keep track of what class you're in
 };
 
@@ -73,6 +74,7 @@ struct classTable {
   methodTable *methods;
   unsigned int symbolCount;
   unsigned int methodCount; // Keep track of what method you're in
+  unsigned int methodIndex;
 };
 
 // Has an array of symbols
@@ -84,12 +86,13 @@ struct methodTable {
 
 void initTable();
 void insertSymbol( symbol s ); // Insert takes a symbol and inserts it into the table
-void insertUSymbol( Token );  // Adds undecl symbols to the struct
 int findSymbol( char *name, unsigned int flag );
 symbol * getSymbol( char *name ); // Returns the symbol with that name
 void closeTable();
 void changeScope( unsigned int newScope );
-ParserInfo undeclSymCheck(); // Checks the final table for undecl vars
 unsigned int indexOf( VarType );
+unsigned int getNLocals( char*, char* ); // Gets the number of local symbos
+unsigned int getArgc( char*, char* ); // Get arg Count
+int findSymbolInClass( char*, char*, char* );
 
 #endif

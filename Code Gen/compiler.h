@@ -7,6 +7,8 @@
 #include "parser.h"
 #include "symbols.h"
 
+extern int parseNum;
+
 int InitCompiler ();
 ParserInfo compile (char* dir_name);
 int StopCompiler();

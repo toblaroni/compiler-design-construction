@@ -23,6 +23,7 @@ Date Work Commenced: 25/04/23
 #include "parser.h"
 #include "symbols.h"
 
+int parseNum = 0;
 
 void writePush(FILE *vmFile, char *seg, unsigned int index) {
 	fprintf(vmFile, "push %s %i\n", seg, index);
@@ -46,7 +47,7 @@ void writeCall(FILE *vmFile, char *name, unsigned int nArgs) {
 	fprintf(vmFile, "call %s %i\n", name, nArgs);
 }
 void writeFunc(FILE *vmFile, char *name, unsigned int nLocal) {
-	fprintf(vmFile, "call %s %i\n", name, nLocal);
+	fprintf(vmFile, "function %s %i\n", name, nLocal);
 }
 void writeRet(FILE *vmFile) {
 	fprintf(vmFile, "return\n");
@@ -88,10 +89,19 @@ ParserInfo compile(char* dir_name) {
 		exit(0);
 	}
 
+	while ( 1 ) {
+		dirEntr = readdir(dir);
+		if (dirEntr == NULL) {
+			if (parseNum) break;
+			closedir(dir);
+			dir = opendir(dir_name);
+			dirEntr = readdir(dir);
+			parseNum++;
+		}
 
-	while ( (dirEntr = readdir(dir)) != NULL ) {
 		char *fileName = dirEntr->d_name;
-		if (!strcmp(fileName, ".") || !strcmp(fileName, ".."))
+		char *substr = strstr(fileName, ".vm");
+		if (!strcmp(fileName, ".") || !strcmp(fileName, "..") || substr)
 			continue;
 
 		// Set the compiler to open at "./<dir_name>/<file_name> 
@@ -113,8 +123,6 @@ ParserInfo compile(char* dir_name) {
 		StopParser();
 	}
 
-	p = undeclSymCheck();
-	
 	closedir(dir);
 	return p;
 }
