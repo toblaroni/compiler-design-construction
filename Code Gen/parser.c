@@ -5,6 +5,9 @@
 #include "symbols.h"
 #include "lexer.h"
 #include "parser.h"
+#include "compiler.h"
+
+FILE * fileOut;
 
 // Function Prototypes
 void error(SyntaxErrors e, ParserInfo *pi, Token t);
@@ -63,16 +66,28 @@ ParserInfo addSymbol(symbol s, Token t) {
 	strcpy(s.name, t.lx);
 
 	// Get the index of the symbol type
-	if (s.dataType == VAR) {
+	if (s.dataType == VAR)
 		s.index = indexOf( s.attr->varType );
-		printf("%s has an index of %i\n", s.name, s.index);	
-	}
 
 	insertSymbol(s);
 	return pi;
 }
 
 int InitParser (char* file_name) {
+
+	// Need to change the file name from .jack to .vm
+	char outputFile[60] = "";
+	int length = strlen(file_name) -4;
+	strncpy(outputFile, file_name, length);
+	strcat(outputFile, "vm");
+	outputFile[length+2] = '\0';
+	
+	fileOut = fopen(outputFile, "w");
+	if (fileOut == NULL) {
+		printf("unable to open output file %s\n", outputFile);
+		exit(-1);
+	}
+
 	return InitLexer(file_name);
 }
 
@@ -1090,6 +1105,7 @@ void error(SyntaxErrors e, ParserInfo *pi, Token t) {
 
 
 int StopParser () {
+	fclose(fileOut);
 	return StopLexer();
 }
 

@@ -23,6 +23,7 @@ Date Work Commenced: 25/04/23
 #include "parser.h"
 #include "symbols.h"
 
+
 int InitCompiler() {
 	// One table for the entire compile process
 	initTable();
