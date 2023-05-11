@@ -14,11 +14,11 @@ int StopCompiler();
 // Writer functions to emit VM Code
 void writePush(FILE*, char*, unsigned int);
 void writePop(FILE*, char*, unsigned int);
-void writeArith(FILE*, char*, unsigned int);
+void writeArith(FILE*, char*);
 void writeLabel(FILE*, char*);
 void writeGoto(FILE*, char*);
 void writeIf(FILE*, char*);
-void writeCall(FILE*, char*);
+void writeCall(FILE*, char*, unsigned int);
 void writeFunc(FILE*, char*, unsigned int);
 void writeRet(FILE*);
 

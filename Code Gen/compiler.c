@@ -24,6 +24,34 @@ Date Work Commenced: 25/04/23
 #include "symbols.h"
 
 
+void writePush(FILE *vmFile, char *seg, unsigned int index) {
+	fprintf(vmFile, "push %s %i\n", seg, index);
+}
+void writePop(FILE *vmFile, char *seg, unsigned int index) {
+	fprintf(vmFile, "pop %s %i\n", seg, index);
+}
+void writeArith(FILE *vmFile, char *cmd) {
+	fprintf(vmFile, "%s\n", cmd);
+}
+void writeLabel(FILE *vmFile, char *label) {
+	fprintf(vmFile, "label %s\n", label);
+}
+void writeGoto(FILE *vmFile, char *label) {
+	fprintf(vmFile, "goto %s\n", label);
+}
+void writeIf(FILE *vmFile, char *label) {
+	fprintf(vmFile, "if-goto %s\n", label);
+}
+void writeCall(FILE *vmFile, char *name, unsigned int nArgs) {
+	fprintf(vmFile, "call %s %i\n", name, nArgs);
+}
+void writeFunc(FILE *vmFile, char *name, unsigned int nLocal) {
+	fprintf(vmFile, "call %s %i\n", name, nLocal);
+}
+void writeRet(FILE *vmFile) {
+	fprintf(vmFile, "return\n");
+}
+
 int InitCompiler() {
 	// One table for the entire compile process
 	initTable();
