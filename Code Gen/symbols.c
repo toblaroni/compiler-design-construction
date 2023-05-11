@@ -308,39 +308,6 @@ void insertTable( symbol s ) {
 }
 
 
-void insertUSymbol(Token t) {
-	if (!strcmp(t.fl, "Array.jack")   || !strcmp(t.fl, "Keyboard.jack") || 
-		!strcmp(t.fl, "Math.jack")    || !strcmp(t.fl, "Memory.jack")   ||
-		!strcmp(t.fl, "Output.jack")  || !strcmp(t.fl, "Screen.jack")   ||
-		!strcmp(t.fl, "String.jack")  || !strcmp(t.fl, "Sys.jack"))
-		return;
-
-	int i = progTable.uSymTable->uSymCount;
-	progTable.uSymTable->tkns[i] = t;
-	progTable.uSymTable->uSymCount++;
-}
-
-
-ParserInfo undeclSymCheck() {
-	ParserInfo p;
-	p.er = none;
-
-	Token t;
-	int f;
-	for (int i = 0; i < progTable.uSymTable->uSymCount; ++i) {
-		t = progTable.uSymTable->tkns[i];
-		f = findInProgram(t.lx);
-		if (f == -1) {
-			p.er = undecIdentifier;
-			p.tk = t;
-			return p;
-		}
-	}
-
-	return p;
-}
-
-
 static int findInProgram( char *name ) {
 
 	// Loop through classes
@@ -431,6 +398,8 @@ int findSymbolInClass(char *parentClass, char *method, char *symbol) {
 	return -1;
 }
 
+// GET PARENT CLASS -> Returns the class that the function resides in
+
 unsigned int getNLocals(char *pName, char *name) {
 	static unsigned int count = 0;
 	classTable * c = getClass(pName);
@@ -447,7 +416,15 @@ unsigned int getNLocals(char *pName, char *name) {
 
 unsigned int getArgc(char *pName, char *name) {
 	static unsigned int count = 0;
-	// Loop through all 
+	classTable * c = getClass(pName);
+	methodTable * m = getMethod(c, name);
+
+	// Loop through symbols counting the number of arg symbols
+	for (int i = 0; i < m->symbolCount; i++) {
+		if (m->symbols[i].attr->varType == ARG)
+			count++;
+	}
+
 	return count;
 }
 

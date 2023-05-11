@@ -741,6 +741,8 @@ ParserInfo subroutineCall() {
 	ParserInfo pi = newParserInfo();
 	Token t;
 	symbol s;
+	char subCall[30] = "";
+	int argC;
 
 	// MAKE SURE THE SUBROUTINE EXISTS
 	pi = expId(&s, &t);
@@ -754,6 +756,8 @@ ParserInfo subroutineCall() {
 		}
 	}
 
+	if (parseNum) strcat(subCall, t.lx);
+
 
 	t = PeekNextToken();
 	if (!strcmp(t.lx, ".")) {
@@ -763,10 +767,20 @@ ParserInfo subroutineCall() {
 		pi = expId(&s, &t);
 		if (pi.er)
 			return pi;
+
 		if (findSymbol(t.lx, PROG_SEARCH) == -1 && parseNum) {
 			error(undecIdentifier, &pi, t);
 			return pi;
 		}
+
+		if (parseNum) {
+			argC = getArgc(subCall, t.lx);
+			strcat(subCall, ".");
+			strcat(subCall, t.lx);
+		}
+
+	} else {
+		
 	}
 
 	pi = expOParen();
